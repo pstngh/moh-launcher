@@ -1,7 +1,8 @@
 // launcher.app: joins a server or starts a local bot match.
 //
-// It sits in the game folder next to the openmohaa binary and keeps its
-// settings in launcher.cfg beside it. bundle.sh builds it.
+// It sits in the game folder next to the game. Connect starts openmohaa.app.
+// Play starts the openmohaa binary. Settings are kept in launcher.cfg beside it.
+// bundle.sh builds it.
 
 import Foundation
 
@@ -773,16 +774,25 @@ struct LauncherView: View {
                 ? [("nickname", config.name)]
                 : [("nickname", config.name), ("server address", config.address),
                    ("password", config.password), ("RCON password", config.rcon)]
-            let game = folder.appendingPathComponent("openmohaa")
+            let game = play
+                ? folder.appendingPathComponent("openmohaa")
+                : folder.appendingPathComponent("openmohaa.app")
+                    .appendingPathComponent("Contents/MacOS/openmohaa")
             guard FileManager.default.fileExists(atPath: game.path) else {
                 return showAlert(
                     translocated
                         ? translocatedMessage
-                        : "openmohaa was not found. Put launcher.app in the game folder, next to openmohaa."
+                        : play
+                            ? "openmohaa was not found. Put launcher.app in the game folder, next to openmohaa."
+                            : "openmohaa.app was not found. Put launcher.app in the game folder, next to openmohaa.app."
                 )
             }
             guard FileManager.default.isExecutableFile(atPath: game.path) else {
-                return showAlert("openmohaa cannot be run. In Terminal, run chmod +x on the openmohaa file in the game folder.")
+                return showAlert(
+                    play
+                        ? "openmohaa cannot be run. In Terminal, run chmod +x on the openmohaa file in the game folder."
+                        : "openmohaa.app cannot be run. In Terminal, run chmod +x on openmohaa.app/Contents/MacOS/openmohaa."
+                )
             }
             if let field = fields.first(where: { !isSafe($0.1) }) {
                 return showAlert("The \(field.0) cannot contain line breaks or any of + ; \" // /* \\")

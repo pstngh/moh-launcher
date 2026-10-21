@@ -791,35 +791,12 @@ struct LauncherView: View {
             }
             saveSettings(config)
 
-            // Play has to run the executable inside mohbots.app. Opening the
-            // bundle does not put sv_maxbots on the command line, and that
-            // cvar is latched, so no bots spawn. This is how the original
-            // launcher started a bot match.
-            if play {
-                let game = app.appendingPathComponent("Contents/MacOS/mohbots")
-                guard FileManager.default.isExecutableFile(atPath: game.path) else {
-                    return showAlert(
-                        FileManager.default.fileExists(atPath: game.path)
-                            ? "mohbots.app cannot be run. In Terminal, run chmod +x on mohbots.app/Contents/MacOS/mohbots."
-                            : "mohbots.app was not found. Put launcher.app in the game folder, next to mohbots.app."
-                    )
-                }
-                let process = Process()
-                process.executableURL = game
-                process.arguments = config.playArgs()
-                process.currentDirectoryURL = folder
-                do {
-                    try process.run()
-                    NSApp.terminate(nil)
-                } catch {
-                    showAlert("The game could not be started: \(error.localizedDescription)")
-                }
-                return
-            }
-
+            // Open the app the way a double-click does. macOS reads the
+            // program name from the app, shows the normal download check,
+            // and brings the game forward if it is already running. The
+            // arguments are delivered only when this starts the game.
             let open = NSWorkspace.OpenConfiguration()
-            open.arguments = config.connectArgs()
-            open.createsNewApplicationInstance = true
+            open.arguments = play ? config.playArgs() : config.connectArgs()
             NSWorkspace.shared.openApplication(at: app, configuration: open) { _, error in
                 DispatchQueue.main.async {
                     if let error {

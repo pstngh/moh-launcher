@@ -20,15 +20,13 @@ jobs:
           mkdir -p "$stage"
           ./bundle.sh "$stage"
           codesign --verify --deep --strict "$stage/launcher.app"
-          # The zip's contents are launcher.app and install.command, not a folder and not another zip.
+          # The zip contains launcher.app, not a folder and not another zip.
           ditto -c -k "$stage" "$RUNNER_TEMP/launcher-macos-arm64.zip"
 
       - uses: actions/upload-artifact@v4
         with:
           name: launcher-macos-arm64
-          path: |
-            ${{ runner.temp }}/stage/launcher.app
-            ${{ runner.temp }}/stage/install.command
+          path: ${{ runner.temp }}/stage/launcher.app
 
 
       - name: Publish release
@@ -39,7 +37,7 @@ jobs:
           tag=v2.0
           notes='Apple silicon, macOS 15 or later.
 
-          Unzip into the game folder, next to openmohaa.app and mohbots.app, then run install.command once. Connect starts openmohaa.app. Play starts mohbots.app.'
+          Unzip launcher.app into the game folder, next to openmohaa.app and mohbots.app. Connect starts openmohaa.app. Play starts mohbots.app.'
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
             gh release edit "$tag" --title "launcher.app $tag" --notes "$notes" --latest

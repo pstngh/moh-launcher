@@ -398,7 +398,7 @@ let folder = Bundle.main.bundleURL.deletingLastPathComponent()
 let settingsFile = folder.appendingPathComponent("launcher.cfg")
 let translocated = Bundle.main.bundlePath.contains("/AppTranslocation/")
 let translocatedMessage =
-    "macOS runs the launcher from a temporary copy, so it cannot find the game. Open install.command in the game folder, then open the launcher again."
+    "macOS runs the launcher from a temporary copy, so it cannot find the game. In Terminal, from the game folder, run xattr -dr com.apple.quarantine . and open the launcher again."
 
 /// Why the game folder cannot be used, if it cannot: the game keeps its
 /// configs, saves and logs there, and the launcher its settings.

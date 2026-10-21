@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds launcher.app for Apple silicon Macs with macOS 15 or later into a
-# game folder, with install.command beside it.
+# game folder.
 #
 # Usage: bundle.sh [game folder, default: current folder]
 set -eu
@@ -16,4 +16,3 @@ xcrun --sdk macosx swiftc -O -swift-version 5 -parse-as-library -target arm64-ap
 cp "$src/Info.plist" "$app/Contents/"
 cp "$src/AppIcon.icns" "$app/Contents/Resources/"
 codesign --force --sign - "$app"
-cp "$src/install.command" "$out/"

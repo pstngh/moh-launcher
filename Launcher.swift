@@ -1,7 +1,7 @@
 // launcher.app: joins a server or starts a local bot match.
 //
 // It sits in the game folder next to the game. Connect starts openmohaa.app.
-// Play starts the openmohaa binary. Settings are kept in launcher.cfg beside it.
+// Play starts mohbots.app. Settings are kept in launcher.cfg beside it.
 // bundle.sh builds it.
 
 import Foundation
@@ -412,6 +412,29 @@ func folderProblem() -> String? {
     return nil
 }
 
+/// The executable inside a .app next to the launcher. Its name is taken from
+/// the bundle, then the app's own name, then openmohaa.
+func appExecutable(_ appName: String) -> URL {
+    let app = folder.appendingPathComponent("\(appName).app")
+    let macos = app.appendingPathComponent("Contents/MacOS")
+    var names: [String] = []
+    if let data = try? Data(contentsOf: app.appendingPathComponent("Contents/Info.plist")),
+       let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+       let name = plist["CFBundleExecutable"] as? String, !name.isEmpty {
+        names.append(name)
+    }
+    for name in [appName, "openmohaa"] where !names.contains(name) {
+        names.append(name)
+    }
+    for name in names {
+        let binary = macos.appendingPathComponent(name)
+        if FileManager.default.fileExists(atPath: binary.path) {
+            return binary
+        }
+    }
+    return macos.appendingPathComponent(names[0])
+}
+
 /// Whether the user was told that settings cannot be saved.
 var reportedSaveFailure = false
 
@@ -774,25 +797,17 @@ struct LauncherView: View {
                 ? [("nickname", config.name)]
                 : [("nickname", config.name), ("server address", config.address),
                    ("password", config.password), ("RCON password", config.rcon)]
-            let game = play
-                ? folder.appendingPathComponent("openmohaa")
-                : folder.appendingPathComponent("openmohaa.app")
-                    .appendingPathComponent("Contents/MacOS/openmohaa")
+            let appName = play ? "mohbots" : "openmohaa"
+            let game = appExecutable(appName)
             guard FileManager.default.fileExists(atPath: game.path) else {
                 return showAlert(
                     translocated
                         ? translocatedMessage
-                        : play
-                            ? "openmohaa was not found. Put launcher.app in the game folder, next to openmohaa."
-                            : "openmohaa.app was not found. Put launcher.app in the game folder, next to openmohaa.app."
+                        : "\(appName).app was not found. Put launcher.app in the game folder, next to \(appName).app."
                 )
             }
             guard FileManager.default.isExecutableFile(atPath: game.path) else {
-                return showAlert(
-                    play
-                        ? "openmohaa cannot be run. In Terminal, run chmod +x on the openmohaa file in the game folder."
-                        : "openmohaa.app cannot be run. In Terminal, run chmod +x on openmohaa.app/Contents/MacOS/openmohaa."
-                )
+                return showAlert("\(appName).app cannot be run. In Terminal, run chmod +x on \(game.lastPathComponent) in \(appName).app/Contents/MacOS.")
             }
             if let field = fields.first(where: { !isSafe($0.1) }) {
                 return showAlert("The \(field.0) cannot contain line breaks or any of + ; \" // /* \\")

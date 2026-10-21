@@ -35,7 +35,7 @@ jobs:
           tag=v2.0
           notes='Apple silicon, macOS 15 or later.
 
-          Unzip into the game folder, next to openmohaa.app, then run install.command once. Connect starts openmohaa.app. Play starts the openmohaa binary.'
+          Unzip into the game folder, next to openmohaa.app and mohbots.app, then run install.command once. Connect starts openmohaa.app. Play starts mohbots.app.'
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
             gh release edit "$tag" --title "launcher.app $tag" --notes "$notes" --latest

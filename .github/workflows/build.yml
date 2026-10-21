@@ -1,0 +1,44 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build launcher.app
+        run: |
+          stage="$RUNNER_TEMP/launcher-macos-arm64"
+          mkdir -p "$stage"
+          ./bundle.sh "$stage"
+          codesign --verify --deep --strict "$stage/launcher.app"
+          ditto -c -k --keepParent "$stage" "$RUNNER_TEMP/launcher-macos-arm64.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-macos-arm64
+          path: ${{ runner.temp }}/launcher-macos-arm64.zip
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          asset="$RUNNER_TEMP/launcher-macos-arm64.zip"
+          tag=v2.0
+          notes='Apple silicon, macOS 15 or later.
+
+          Unzip into the game folder, next to openmohaa.app, then run install.command once. Connect starts openmohaa.app. Play starts the openmohaa binary.'
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$asset" --clobber
+            gh release edit "$tag" --title "launcher.app $tag" --notes "$notes" --latest
+          else
+            gh release create "$tag" "$asset" --title "launcher.app $tag" --notes "$notes" --latest --target "$GITHUB_SHA"
+          fi

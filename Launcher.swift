@@ -412,29 +412,6 @@ func folderProblem() -> String? {
     return nil
 }
 
-/// The executable inside a .app next to the launcher. Its name is taken from
-/// the bundle, then the app's own name, then openmohaa.
-func appExecutable(_ appName: String) -> URL {
-    let app = folder.appendingPathComponent("\(appName).app")
-    let macos = app.appendingPathComponent("Contents/MacOS")
-    var names: [String] = []
-    if let data = try? Data(contentsOf: app.appendingPathComponent("Contents/Info.plist")),
-       let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-       let name = plist["CFBundleExecutable"] as? String, !name.isEmpty {
-        names.append(name)
-    }
-    for name in [appName, "openmohaa"] where !names.contains(name) {
-        names.append(name)
-    }
-    for name in names {
-        let binary = macos.appendingPathComponent(name)
-        if FileManager.default.fileExists(atPath: binary.path) {
-            return binary
-        }
-    }
-    return macos.appendingPathComponent(names[0])
-}
-
 /// Whether the user was told that settings cannot be saved.
 var reportedSaveFailure = false
 
@@ -798,16 +775,13 @@ struct LauncherView: View {
                 : [("nickname", config.name), ("server address", config.address),
                    ("password", config.password), ("RCON password", config.rcon)]
             let appName = play ? "mohbots" : "openmohaa"
-            let game = appExecutable(appName)
-            guard FileManager.default.fileExists(atPath: game.path) else {
+            let app = folder.appendingPathComponent("\(appName).app")
+            guard FileManager.default.fileExists(atPath: app.path) else {
                 return showAlert(
                     translocated
                         ? translocatedMessage
                         : "\(appName).app was not found. Put launcher.app in the game folder, next to \(appName).app."
                 )
-            }
-            guard FileManager.default.isExecutableFile(atPath: game.path) else {
-                return showAlert("\(appName).app cannot be run. In Terminal, run chmod +x on \(game.lastPathComponent) in \(appName).app/Contents/MacOS.")
             }
             if let field = fields.first(where: { !isSafe($0.1) }) {
                 return showAlert("The \(field.0) cannot contain line breaks or any of + ; \" // /* \\")
@@ -817,15 +791,17 @@ struct LauncherView: View {
             }
             saveSettings(config)
 
-            let process = Process()
-            process.executableURL = game
-            process.arguments = play ? config.playArgs() : config.connectArgs()
-            process.currentDirectoryURL = folder
-            do {
-                try process.run()
-                NSApp.terminate(nil)
-            } catch {
-                showAlert("The game could not be started: \(error.localizedDescription)")
+            let open = NSWorkspace.OpenConfiguration()
+            open.arguments = play ? config.playArgs() : config.connectArgs()
+            open.createsNewApplicationInstance = true
+            NSWorkspace.shared.openApplication(at: app, configuration: open) { _, error in
+                DispatchQueue.main.async {
+                    if let error {
+                        showAlert("The game could not be started: \(error.localizedDescription)")
+                    } else {
+                        NSApp.terminate(nil)
+                    }
+                }
             }
         }
     }

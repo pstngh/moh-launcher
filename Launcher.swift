@@ -207,14 +207,18 @@ struct Config: Equatable {
         args += set("dmflags", dmflags)
         args += set("fraglimit", 0)
         // More than one slot keeps the loading screen from waiting for a click.
+        // sv_maxbots is latched, and the game spawns min(sv_numbots, sv_maxbots).
+        // sv_bots is the name the earlier launcher passed.
         args += set("sv_maxclients", 2)
-        args += set("sv_maxbots", bots) + set("sv_numbots", bots) + set("g_bot_team", botTeam)
-        args += set("sv_gamespy", 0)
+        args += set("sv_maxbots", bots) + set("sv_numbots", bots) + set("sv_bots", bots)
+        args += set("g_bot_team", botTeam)
+        args += set("sv_gamespy", 0) + set("sv_lanOnly", 1) + set("g_bot_lan_observer", 1)
         args += set("g_playerdmhealth", health)
         args += set("sv_runspeed", runSpeed)
         args += set("g_painanims", painAnims)
         // devmap keeps cheats on, and thereisnomonkey stops the first cheat
         // command from turning them off again.
+        args += set("cheats", 1)
         args += set("thereisnomonkey", 1)
         return args + ["+devmap", map]
     }
@@ -791,8 +795,34 @@ struct LauncherView: View {
             }
             saveSettings(config)
 
+            // Play has to run the executable inside mohbots.app. Opening the
+            // bundle does not put sv_maxbots on the command line, and that
+            // cvar is latched, so no bots spawn. This is how the original
+            // launcher started a bot match.
+            if play {
+                let game = app.appendingPathComponent("Contents/MacOS/mohbots")
+                guard FileManager.default.isExecutableFile(atPath: game.path) else {
+                    return showAlert(
+                        FileManager.default.fileExists(atPath: game.path)
+                            ? "mohbots.app cannot be run. In Terminal, run chmod +x on mohbots.app/Contents/MacOS/mohbots."
+                            : "mohbots.app was not found. Put launcher.app in the game folder, next to mohbots.app."
+                    )
+                }
+                let process = Process()
+                process.executableURL = game
+                process.arguments = config.playArgs()
+                process.currentDirectoryURL = folder
+                do {
+                    try process.run()
+                    NSApp.terminate(nil)
+                } catch {
+                    showAlert("The game could not be started: \(error.localizedDescription)")
+                }
+                return
+            }
+
             let open = NSWorkspace.OpenConfiguration()
-            open.arguments = play ? config.playArgs() : config.connectArgs()
+            open.arguments = config.connectArgs()
             open.createsNewApplicationInstance = true
             NSWorkspace.shared.openApplication(at: app, configuration: open) { _, error in
                 DispatchQueue.main.async {

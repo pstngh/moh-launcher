@@ -113,11 +113,12 @@ struct Config: Equatable {
         return address.isEmpty ? nil : shortcuts.firstIndex { !$0.name.isEmpty && $0.address == address }
     }
 
-    /// Passwords belong to one server, so another address gets its own or none.
+    /// A finished address that matches a shortcut uses that shortcut's
+    /// passwords. A partial address leaves whatever is already typed.
     mutating func addressChanged() {
-        let shortcut = shortcutIndex.map { shortcuts[$0] } ?? Shortcut()
-        password = shortcut.password
-        rcon = shortcut.rcon
+        guard let index = shortcutIndex else { return }
+        password = shortcuts[index].password
+        rcon = shortcuts[index].rcon
     }
 
     /// A run speed left at the old game's default follows the new game, and

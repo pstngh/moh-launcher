@@ -75,8 +75,6 @@ struct Config: Equatable {
     var runSpeed = Config.runSpeed(for: 0)
     var infiniteAmmo = true
     var painAnims = true
-    var aaLean = false
-    var godMode = false
     var fullscreen = true
     var resolution = "1920x1080"
     var crosshairLength = Config.crosshairDefaults.length
@@ -209,20 +207,14 @@ struct Config: Equatable {
         args += set("dmflags", dmflags)
         args += set("fraglimit", 0)
         // More than one slot keeps the loading screen from waiting for a click.
-        // sv_maxbots is latched, and the game spawns min(sv_numbots, sv_maxbots).
-        // sv_bots is the name the earlier launcher passed.
         args += set("sv_maxclients", 2)
-        args += set("sv_maxbots", bots) + set("sv_numbots", bots) + set("sv_bots", bots)
-        args += set("g_bot_team", botTeam)
-        args += set("sv_gamespy", 0) + set("sv_lanOnly", 1) + set("g_bot_lan_observer", 1)
+        args += set("sv_maxbots", bots) + set("sv_numbots", bots) + set("g_bot_team", botTeam)
+        args += set("sv_gamespy", 0)
         args += set("g_playerdmhealth", health)
         args += set("sv_runspeed", runSpeed)
         args += set("g_painanims", painAnims)
-        args += set("g_aalean", aaLean)
-        args += set("g_godmode", godMode)
         // devmap keeps cheats on, and thereisnomonkey stops the first cheat
         // command from turning them off again.
-        args += set("cheats", 1)
         args += set("thereisnomonkey", 1)
         return args + ["+devmap", map]
     }
@@ -284,8 +276,6 @@ struct Config: Equatable {
         runSpeed = number("run_speed", Config.runSpeeds(for: game), Config.runSpeed(for: game))
         infiniteAmmo = flag("infinite_ammo", infiniteAmmo)
         painAnims = flag("pain_anims", painAnims)
-        aaLean = flag("aa_lean", values["aa_style"].map { $0 != "0" } ?? aaLean)
-        godMode = flag("god_mode", godMode)
         fullscreen = flag("fullscreen_enabled", fullscreen)
         let oldResolution = choice("resolution_index", 0...oldResolutions.count - 1, -1)
         resolution = (values["resolution"] ?? (oldResolution < 0 ? nil : oldResolutions[oldResolution]))
@@ -303,7 +293,7 @@ struct Config: Equatable {
             "game=\(game)", "nickname=\(name)", "ip=\(address)", "password=\(password)", "rcon=\(rcon)",
             "bot_game_type=\(gametype)", "bot_map=\(map)", "bot_count=\(bots)", "bot_team=\(botTeam)",
             "player_health=\(health)", "run_speed=\(runSpeed)", "infinite_ammo=\(infiniteAmmo ? 1 : 0)",
-            "pain_anims=\(painAnims ? 1 : 0)", "aa_lean=\(aaLean ? 1 : 0)", "god_mode=\(godMode ? 1 : 0)",
+            "pain_anims=\(painAnims ? 1 : 0)",
             "fullscreen_enabled=\(fullscreen ? 1 : 0)", "resolution=\(resolution)",
             "crosshair_length=\(crosshairLength)", "crosshair_gap=\(crosshairGap)",
             "crosshair_thickness=\(crosshairThickness)", "crosshair_color=\(crosshairColor)",
@@ -675,11 +665,6 @@ struct LauncherView: View {
             Toggle("SH/BT pain", isOn: $config.painAnims)
                 .disabled(config.game == 0)
                 .help("Play the Spearhead and Breakthrough pain animations when players are hit.")
-        }
-        Row("") {
-            Toggle("AA lean", isOn: $config.aaLean)
-                .help("Use Allied Assault lean limits, speeds, recovery, and camera roll in Breakthrough.")
-            Toggle("God mode", isOn: $config.godMode)
         }
     }
 

@@ -16,16 +16,20 @@ jobs:
 
       - name: Build launcher.app
         run: |
-          stage="$RUNNER_TEMP/launcher-macos-arm64"
+          stage="$RUNNER_TEMP/stage"
           mkdir -p "$stage"
           ./bundle.sh "$stage"
           codesign --verify --deep --strict "$stage/launcher.app"
-          ditto -c -k --keepParent "$stage" "$RUNNER_TEMP/launcher-macos-arm64.zip"
+          # The zip's contents are launcher.app and install.command, not a folder and not another zip.
+          ditto -c -k "$stage" "$RUNNER_TEMP/launcher-macos-arm64.zip"
 
       - uses: actions/upload-artifact@v4
         with:
           name: launcher-macos-arm64
-          path: ${{ runner.temp }}/launcher-macos-arm64.zip
+          path: |
+            ${{ runner.temp }}/stage/launcher.app
+            ${{ runner.temp }}/stage/install.command
+
 
       - name: Publish release
         env:

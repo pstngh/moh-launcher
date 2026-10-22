@@ -16,6 +16,7 @@ jobs:
 
       - name: Build launcher.app
         run: |
+          brew install librsvg
           stage="$RUNNER_TEMP/stage"
           mkdir -p "$stage"
           ./bundle.sh "$stage"

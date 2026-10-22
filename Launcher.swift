@@ -486,7 +486,7 @@ func md5(of file: URL) -> String? {
 struct LauncherApp: App {
     var body: some Scene {
         // A single window, which quits the launcher when it closes.
-        Window("MoHAA", id: "launcher") {
+        Window("MoH Launcher", id: "launcher") {
             LauncherView()
         }
         .windowResizability(.contentSize)

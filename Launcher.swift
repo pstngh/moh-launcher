@@ -86,6 +86,10 @@ struct Config: Equatable {
     static let crosshairLengths = 2...32
     static let crosshairGaps = 1...20
     static let crosshairThicknesses = 1...8
+    static let crosshairColors: [(name: String, hex: String)] = [
+        ("White", "FFFFFF"), ("Red", "FF0000"), ("Green", "00FF00"), ("Blue", "0000FF"),
+        ("Yellow", "FFFF00"), ("Cyan", "00FFFF"), ("Orange", "FF8800"),
+    ]
 
     static func runSpeed(for game: Int) -> Int {
         game == 0 ? 250 : 287
@@ -97,10 +101,10 @@ struct Config: Equatable {
         game == 0 ? 250...286 : 250...287
     }
 
-    /// A six-digit RGB value, or white.
+    /// One of the named crosshair colors, or white.
     static func color(_ value: String) -> String {
-        let hex = value.hasPrefix("#") ? String(value.dropFirst()) : value
-        return hex.count == 6 && hex.allSatisfy(\.isHexDigit) ? hex.uppercased() : crosshairDefaults.color
+        let hex = (value.hasPrefix("#") ? String(value.dropFirst()) : value).uppercased()
+        return crosshairColors.contains { $0.hex == hex } ? hex : crosshairDefaults.color
     }
 
     var trimmedAddress: String {
@@ -683,8 +687,13 @@ struct LauncherView: View {
                     LabeledSlider("Thickness", value: $config.crosshairThickness, range: Config.crosshairThicknesses)
                     HStack(spacing: 8) {
                         Text("Color").foregroundStyle(.secondary).frame(width: 64, alignment: .leading)
-                        ColorPicker("", selection: crosshairColor, supportsOpacity: false)
-                            .labelsHidden()
+                        Picker("", selection: $config.crosshairColor) {
+                            ForEach(Config.crosshairColors, id: \.hex) { color in
+                                Text(color.name).tag(color.hex)
+                            }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
                         Spacer()
                         Button("Reset") {
                             config.crosshairLength = Config.crosshairDefaults.length
@@ -697,19 +706,6 @@ struct LauncherView: View {
             }
         }
         .help("Crosshair sizes are in pixels at 1080p and scale with the resolution.")
-    }
-
-    private var crosshairColor: Binding<Color> {
-        Binding(
-            get: { rgbColor(config.crosshairColor) },
-            set: { color in
-                guard let rgb = NSColor(color).usingColorSpace(.sRGB) else { return }
-                let byte = { (value: CGFloat) in min(max(Int((value * 255).rounded()), 0), 255) }
-                config.crosshairColor = String(
-                    format: "%02X%02X%02X", byte(rgb.redComponent), byte(rgb.greenComponent), byte(rgb.blueComponent)
-                )
-            }
-        )
     }
 
     /// Checks the retail pak files: a grey check until used, a spinner while

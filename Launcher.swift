@@ -502,12 +502,12 @@ struct LauncherView: View {
     @State private var checkedPaks = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
+        VStack(spacing: 6) {
+            HStack(alignment: .top, spacing: 6) {
                 Card { serverRows }
                 Card { botRows }
             }
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 LaunchButton(title: "Connect", icon: "bolt.fill") { launch(play: false) }
                     .help("Joins the server in Allied Assault.")
                 LaunchButton(title: "Play", icon: "play.fill") { launch(play: true) }
@@ -515,7 +515,7 @@ struct LauncherView: View {
             }
             Card { crosshairRows }
         }
-        .padding(10)
+        .padding(8)
         .frame(width: 780)
         .fixedSize()
         .preferredColorScheme(.dark)
@@ -553,7 +553,7 @@ struct LauncherView: View {
                 Button { config.game = game } label: {
                     Text(games[game].0)
                         .font(.system(size: 12, weight: selected ? .semibold : .regular))
-                        .frame(width: 56)
+                    .frame(maxWidth: .infinity)
                         .padding(.vertical, 4)
                         .foregroundStyle(selected ? Color.white : Color.secondary)
                         .background(selected ? accent : Color.clear)
@@ -570,16 +570,16 @@ struct LauncherView: View {
     // MARK: Cards
 
     @ViewBuilder private var serverRows: some View {
-        Row("Nickname") {
+        HStack(spacing: 6) {
+            Text("Nickname").foregroundStyle(.secondary).frame(width: labelWidth, alignment: .trailing)
             TextField("", text: $config.name).textFieldStyle(.roundedBorder)
-        }
-        Row("Server") {
+            Text("Server").foregroundStyle(.secondary)
             TextField("address:port", text: $config.address).textFieldStyle(.roundedBorder)
         }
-        Row("Password") {
+        HStack(spacing: 6) {
+            Text("Password").foregroundStyle(.secondary).frame(width: labelWidth, alignment: .trailing)
             SecureField("", text: $config.password).textFieldStyle(.roundedBorder)
-        }
-        Row("RCON") {
+            Text("RCON").foregroundStyle(.secondary)
             SecureField("", text: $config.rcon).textFieldStyle(.roundedBorder)
         }
         Divider()
@@ -646,7 +646,6 @@ struct LauncherView: View {
         }
         Row("Bots") {
             NumberField(value: $config.bots, range: 1...maxBots, step: 1)
-            Spacer()
             Text("Team").foregroundStyle(.secondary)
             Picker("", selection: $config.botTeam) {
                 Text("Auto").tag("auto")
@@ -659,8 +658,7 @@ struct LauncherView: View {
         }
         Row("Health") {
             NumberField(value: $config.health, range: 1...1000, step: 25)
-        }
-        Row("Run speed") {
+            Text("Speed").foregroundStyle(.secondary)
             IntSlider(value: $config.runSpeed, range: Config.runSpeeds(for: config.game))
         }
         .help("Allied Assault: 250, Spearhead and Breakthrough: 287")
@@ -711,7 +709,7 @@ struct LauncherView: View {
             Picker("Resolution", selection: $config.resolution) {
                 ForEach(resolutions, id: \.self) { Text($0).tag($0) }
             }
-            .fixedSize()
+            .frame(maxWidth: .infinity)
             verifyButton
         }
     }
@@ -824,9 +822,9 @@ struct Card<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) { content }
+        VStack(alignment: .leading, spacing: 6) { content }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .padding(10)
+        .padding(8)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.045)))
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -952,7 +950,7 @@ struct LaunchButton: View {
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 9)
+            .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(accent))
             .contentShape(Rectangle())
         }

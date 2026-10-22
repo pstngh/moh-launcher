@@ -709,7 +709,7 @@ struct LauncherView: View {
             Picker("Resolution", selection: $config.resolution) {
                 ForEach(resolutions, id: \.self) { Text($0).tag($0) }
             }
-            .frame(maxWidth: .infinity)
+            .fixedSize()
             verifyButton
         }
     }

@@ -19,7 +19,7 @@ jobs:
           brew install librsvg
           stage="$RUNNER_TEMP/stage"
           mkdir -p "$stage"
-          ./bundle.sh "$stage"
+          sh bundle.sh "$stage"
           codesign --verify --deep --strict "$stage/launcher.app"
           # The zip contains launcher.app, not a folder and not another zip.
           ditto -c -k "$stage" "$RUNNER_TEMP/launcher-macos-arm64.zip"

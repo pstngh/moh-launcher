@@ -1,6 +1,6 @@
 # moh-launcher
 
-macOS launcher for OpenMoHAA. The window is black, with red controls.
+macOS launcher for MoHAA. The window is black, with red controls.
 
 ![Launcher](preview.jpg)
 

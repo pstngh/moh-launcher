@@ -1,10 +1,10 @@
 # moh-launcher
 
-macOS launcher for OpenMoHAA.
+macOS launcher for OpenMoHAA. The window is black, with red controls.
 
 ![Launcher](preview.jpg)
 
-Connect opens `openmohaa.app`. Play opens `mohbots.app`.
+Connect opens `openmohaa.app`. Play opens `mohbots.app`. The first shortcut is Forte FFA and cannot be changed.
 
 Download [launcher-macos-arm64.zip](https://github.com/pstngh/moh-launcher/releases/download/v2.0/launcher-macos-arm64.zip) (Apple silicon, macOS 15 or later). Unzip `launcher.app` into the game folder, next to `openmohaa.app` and `mohbots.app`.
 

@@ -516,7 +516,7 @@ struct LauncherView: View {
             Card { crosshairRows }
         }
         .padding(10)
-        .frame(width: 720)
+        .frame(width: 780)
         .fixedSize()
         .preferredColorScheme(.dark)
         .tint(accent)
@@ -667,7 +667,7 @@ struct LauncherView: View {
         Row("") {
             Toggle("Infinite ammo", isOn: $config.infiniteAmmo)
                 .help("Clips never empty, so weapons never need reloading.")
-            Toggle("SH/BT pain", isOn: $config.painAnims)
+            Toggle("SH/BT animations", isOn: $config.painAnims)
                 .disabled(config.game == 0)
                 .help("Play the Spearhead and Breakthrough pain animations when players are hit.")
         }

@@ -789,11 +789,13 @@ struct LauncherView: View {
             saveSettings(config)
 
             // Open the app the way a double-click does. macOS reads the
-            // program name from the app, shows the normal download check,
-            // and brings the game forward if it is already running. The
-            // arguments are delivered only when this starts the game.
+            // program name from the app and shows the normal download check.
+            // Play starts a new copy: an already running game would come
+            // forward and ignore the map and the bot count. sv_maxbots is
+            // latched, so those have to be on the command line of that copy.
             let open = NSWorkspace.OpenConfiguration()
             open.arguments = play ? config.playArgs() : config.connectArgs()
+            open.createsNewApplicationInstance = play
             NSWorkspace.shared.openApplication(at: app, configuration: open) { _, error in
                 DispatchQueue.main.async {
                     if let error {

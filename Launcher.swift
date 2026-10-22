@@ -502,28 +502,12 @@ struct LauncherView: View {
     @State private var checkedPaks = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Text("Nickname").foregroundStyle(.secondary)
-                TextField("", text: $config.name)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 200)
-                Spacer()
-                verifyButton
-                Toggle("Fullscreen", isOn: $config.fullscreen)
-                    .padding(.horizontal, 8)
-                Picker("Resolution", selection: $config.resolution) {
-                    ForEach(resolutions, id: \.self) { Text($0).tag($0) }
-                }
-                .fixedSize()
-            }
-            // fixedSize stretches both cards to the taller one.
-            HStack(alignment: .top, spacing: 12) {
+        VStack(spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 Card { serverRows }
                 Card { botRows }
             }
-            .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 LaunchButton(title: "Connect", icon: "bolt.fill") { launch(play: false) }
                     .help("Joins the server in Allied Assault.")
                 LaunchButton(title: "Play", icon: "play.fill") { launch(play: true) }
@@ -531,8 +515,8 @@ struct LauncherView: View {
             }
             Card { crosshairRows }
         }
-        .padding(14)
-        .frame(width: 760)
+        .padding(10)
+        .frame(width: 720)
         .fixedSize()
         .preferredColorScheme(.dark)
         .tint(accent)
@@ -586,6 +570,9 @@ struct LauncherView: View {
     // MARK: Cards
 
     @ViewBuilder private var serverRows: some View {
+        Row("Nickname") {
+            TextField("", text: $config.name).textFieldStyle(.roundedBorder)
+        }
         Row("Server") {
             TextField("address:port", text: $config.address).textFieldStyle(.roundedBorder)
         }
@@ -689,9 +676,9 @@ struct LauncherView: View {
     @ViewBuilder private var crosshairRows: some View {
         HStack(alignment: .center, spacing: 8) {
             CrosshairPreview(config: config)
-                .frame(width: labelWidth, height: 60)
+                .frame(width: labelWidth, height: 44)
                 .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.black.opacity(0.85)))
-            Grid(horizontalSpacing: 24, verticalSpacing: 8) {
+            Grid(horizontalSpacing: 16, verticalSpacing: 6) {
                 GridRow {
                     LabeledSlider("Length", value: $config.crosshairLength, range: Config.crosshairLengths)
                     LabeledSlider("Gap", value: $config.crosshairGap, range: Config.crosshairGaps)
@@ -707,7 +694,6 @@ struct LauncherView: View {
                         }
                         .labelsHidden()
                         .fixedSize()
-                        Spacer()
                         Button("Reset") {
                             config.crosshairLength = Config.crosshairDefaults.length
                             config.crosshairGap = Config.crosshairDefaults.gap
@@ -719,6 +705,15 @@ struct LauncherView: View {
             }
         }
         .help("Crosshair sizes are in pixels at 1080p and scale with the resolution.")
+        HStack(spacing: 8) {
+            Text("Video").foregroundStyle(.secondary).frame(width: labelWidth, alignment: .trailing)
+            Toggle("Fullscreen", isOn: $config.fullscreen)
+            Picker("Resolution", selection: $config.resolution) {
+                ForEach(resolutions, id: \.self) { Text($0).tag($0) }
+            }
+            .fixedSize()
+            verifyButton
+        }
     }
 
     /// Checks the retail pak files: a grey check until used, a white check
@@ -830,7 +825,7 @@ struct Card<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) { content }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.045)))
         .overlay(

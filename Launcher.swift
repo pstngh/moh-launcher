@@ -87,8 +87,8 @@ struct Config: Equatable {
     static let crosshairGaps = 1...20
     static let crosshairThicknesses = 1...8
     static let crosshairColors: [(name: String, hex: String)] = [
-        ("White", "FFFFFF"), ("Red", "FF0000"), ("Green", "00FF00"), ("Blue", "0000FF"),
-        ("Yellow", "FFFF00"), ("Cyan", "00FFFF"), ("Orange", "FF8800"),
+        ("Green", "00FF00"), ("Cyan", "00FFFF"), ("Yellow", "FFFF00"), ("Red", "FF0000"),
+        ("Blue", "0000FF"), ("White", "FFFFFF"), ("Pink", "FF00FF"),
     ]
 
     static func runSpeed(for game: Int) -> Int {

@@ -503,10 +503,8 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            HStack(alignment: .top, spacing: 6) {
-                Card { serverRows }
-                Card { botRows }
-            }
+            Card { serverRows }
+            Card { botRows }
             HStack(spacing: 6) {
                 LaunchButton(title: "Connect", icon: "bolt.fill") { launch(play: false) }
                     .help("Joins the server in Allied Assault.")
@@ -516,7 +514,7 @@ struct LauncherView: View {
             Card { crosshairRows }
         }
         .padding(8)
-        .frame(width: 780)
+        .frame(width: 520)
         .fixedSize()
         .preferredColorScheme(.dark)
         .tint(accent)
@@ -676,7 +674,7 @@ struct LauncherView: View {
             CrosshairPreview(config: config)
                 .frame(width: labelWidth, height: 44)
                 .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.black.opacity(0.85)))
-            Grid(horizontalSpacing: 16, verticalSpacing: 6) {
+            Grid(horizontalSpacing: 8, verticalSpacing: 6) {
                 GridRow {
                     LabeledSlider("Length", value: $config.crosshairLength, range: Config.crosshairLengths)
                     LabeledSlider("Gap", value: $config.crosshairGap, range: Config.crosshairGaps)

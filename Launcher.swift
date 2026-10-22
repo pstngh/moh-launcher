@@ -48,6 +48,9 @@ let botTeams = ["auto", "allies", "axis"]  // g_bot_team values
 let maxBots = 62  // 64 clients minus the two player slots of a bot match
 let shortcutCount = 3
 
+/// The first shortcut is built in. Loading and saving cannot change it.
+let forte = Shortcut(name: "Forte FFA", address: "151.80.234.90:12203")
+
 /// com_target_game values 0, 1 and 2.
 let games = [("AA", "Allied Assault"), ("SH", "Spearhead"), ("BT", "Breakthrough")]
 
@@ -66,7 +69,7 @@ struct Config: Equatable {
     var address = ""
     var password = ""
     var rcon = ""
-    var shortcuts = Array(repeating: Shortcut(), count: shortcutCount)
+    var shortcuts = [forte] + Array(repeating: Shortcut(), count: shortcutCount - 1)
     var gametype = 1  // 1 free-for-all, 2 team match
     var map = aaMaps[0]
     var bots = 3
@@ -146,9 +149,10 @@ struct Config: Equatable {
     /// A server has one shortcut, so saving it in a slot clears any other
     /// slot with the same address.
     mutating func saveShortcut(_ index: Int, name: String) {
+        guard index != 0 else { return }
         let name = name.trimmingCharacters(in: .whitespaces)
         if !name.isEmpty {
-            for other in shortcuts.indices where other != index && shortcuts[other].address == trimmedAddress {
+            for other in shortcuts.indices where other != 0 && other != index && shortcuts[other].address == trimmedAddress {
                 shortcuts[other] = Shortcut()
             }
             shortcuts[index] = Shortcut(name: name, address: trimmedAddress, password: password, rcon: rcon)
@@ -157,7 +161,7 @@ struct Config: Equatable {
 
     /// Keeps passwords edited before connecting in the shortcut of that server.
     mutating func rememberPasswords() {
-        if let index = shortcutIndex {
+        if let index = shortcutIndex, index != 0 {
             shortcuts[index].password = password
             shortcuts[index].rcon = rcon
         }
@@ -262,7 +266,7 @@ struct Config: Equatable {
         address = values["ip"] ?? address
         password = values["password"] ?? password
         rcon = values["rcon"] ?? rcon
-        for index in shortcuts.indices {
+        for index in shortcuts.indices where index != 0 {
             // The first lean launcher saved servers without a name.
             let address = values["bookmark_ip_\(index)"] ?? ""
             let name = values["bookmark_name_\(index)"] ?? address
@@ -273,6 +277,7 @@ struct Config: Equatable {
                 )
             }
         }
+        shortcuts[0] = forte
         gametype = choice("bot_game_type", 1...2, gametype)
         map = values["bot_map"].flatMap { maps(for: game).contains($0) ? $0 : nil } ?? maps(for: game)[0]
         bots = number("bot_count", 1...maxBots, bots)
@@ -612,17 +617,19 @@ struct LauncherView: View {
             }
             .disabled(empty)
             .help("Connect to \(shortcut.name)")
-            Button("Save") {
-                shortcutName = empty ? config.trimmedAddress : shortcut.name
-                namingShortcut = index
+            if index != 0 {
+                Button("Save") {
+                    shortcutName = empty ? config.trimmedAddress : shortcut.name
+                    namingShortcut = index
+                }
+                .disabled(config.trimmedAddress.isEmpty)
+                .help("Save the server and passwords above in this shortcut")
+                Button { config.shortcuts[index] = Shortcut() } label: {
+                    Image(systemName: "trash")
+                }
+                .disabled(empty)
+                .help("Clear this shortcut")
             }
-            .disabled(config.trimmedAddress.isEmpty)
-            .help("Save the server and passwords above in this shortcut")
-            Button { config.shortcuts[index] = Shortcut() } label: {
-                Image(systemName: "trash")
-            }
-            .disabled(empty)
-            .help("Clear this shortcut")
         }
         .controlSize(.small)
     }

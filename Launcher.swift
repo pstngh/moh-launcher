@@ -401,7 +401,9 @@ import AppKit
 import CryptoKit
 import SwiftUI
 
-let accent = Color(red: 123 / 255, green: 79 / 255, blue: 191 / 255)
+/// Pure red. A 0K blue-light filter removes green and blue, so this is the
+/// only accent that stays visible, and it stays darker than white text.
+let accent = Color(red: 196 / 255, green: 0, blue: 0)
 let labelWidth: CGFloat = 76
 
 let folder = Bundle.main.bundleURL.deletingLastPathComponent()
@@ -532,7 +534,11 @@ struct LauncherView: View {
         .padding(14)
         .frame(width: 760)
         .fixedSize()
+        .preferredColorScheme(.dark)
+        .tint(accent)
+        .containerBackground(Color.black, for: .window)
         .onAppear {
+            NSApp.appearance = NSAppearance(named: .darkAqua)
             if let problem = folderProblem() {
                 // Settings would only fail to save after that.
                 reportedSaveFailure = true
@@ -715,9 +721,9 @@ struct LauncherView: View {
         .help("Crosshair sizes are in pixels at 1080p and scale with the resolution.")
     }
 
-    /// Checks the retail pak files: a grey check until used, a spinner while
-    /// checking, then a green check when all are intact or a red cross when
-    /// any is damaged. The tooltip gives the details.
+    /// Checks the retail pak files: a grey check until used, a white check
+    /// when all are intact, or a red mark when any are missing or damaged.
+    /// Green would disappear under a filter that removes every color but red.
     private var verifyButton: some View {
         Button(action: verifyPaks) {
             Group {
@@ -740,7 +746,7 @@ struct LauncherView: View {
 
     private var pakColor: Color {
         guard let check = pakCheck else { return .secondary }
-        return check.damaged > 0 ? .red : check.missing > 0 ? .orange : .green
+        return check.damaged > 0 || check.missing > 0 ? accent : .white
     }
 
     private var pakHelp: String {

@@ -35,4 +35,9 @@ cp "$iconset/icon_256x256@2x.png" "$iconset/icon_512x512.png"
 sips -z 1024 1024 "$master" --out "$iconset/icon_512x512@2x.png" >/dev/null
 iconutil -c icns "$iconset" -o "$app/Contents/Resources/AppIcon.icns"
 
+# Game buttons: the Allied star, the Spearhead chevrons, the Breakthrough dagger.
+rsvg-convert -w 64 -h 64 "$src/mohaa-transparent.svg" -o "$app/Contents/Resources/game-aa.png"
+rsvg-convert -w 64 -h 64 "$src/mohaa-spearhead.svg" -o "$app/Contents/Resources/game-sh.png"
+rsvg-convert -w 64 -h 64 "$src/mohaa-breakthrough.svg" -o "$app/Contents/Resources/game-bt.png"
+
 codesign --force --sign - "$app"

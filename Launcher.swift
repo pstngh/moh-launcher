@@ -51,8 +51,12 @@ let shortcutCount = 3
 /// The first shortcut is built in. Loading and saving cannot change it.
 let forte = Shortcut(name: "Forte FFA", address: "151.80.234.90:12203")
 
-/// com_target_game values 0, 1 and 2.
-let games = [("AA", "Allied Assault"), ("SH", "Spearhead"), ("BT", "Breakthrough")]
+/// com_target_game values 0, 1 and 2. The icon is a PNG built into the app.
+let games = [
+    ("game-aa", "Allied Assault"),
+    ("game-sh", "Spearhead"),
+    ("game-bt", "Breakthrough"),
+]
 
 /// A named server with the passwords that belong to it. A slot without a
 /// name is empty.
@@ -545,24 +549,33 @@ struct LauncherView: View {
     }
 
     private var gamePicker: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 4) {
             ForEach(games.indices, id: \.self) { game in
                 let selected = config.game == game
                 Button { config.game = game } label: {
-                    Text(games[game].0)
-                        .font(.system(size: 12, weight: selected ? .semibold : .regular))
-                    .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                        .foregroundStyle(selected ? Color.white : Color.secondary)
-                        .background(selected ? accent : Color.clear)
+                    Image(nsImage: gameIcon(games[game].0))
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 22, height: 22)
+                        .padding(3)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .strokeBorder(selected ? accent : Color.clear, lineWidth: 1.5)
+                        )
+                        .opacity(selected ? 1 : 0.45)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help(games[game].1)
             }
         }
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+
+    private func gameIcon(_ name: String) -> NSImage {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "png"),
+              let image = NSImage(contentsOf: url) else { return NSImage() }
+        return image
     }
 
     // MARK: Cards

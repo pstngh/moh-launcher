@@ -669,11 +669,15 @@ struct LauncherView: View {
     private func shortcutRow(_ index: Int) -> some View {
         let shortcut = config.shortcuts[index]
         let empty = shortcut.name.isEmpty
+        let loaded = !empty
+            && shortcut.address == config.trimmedAddress
+            && shortcut.password == config.password
+            && shortcut.rcon == config.rcon
         return HStack(spacing: 4) {
             Button { config.applyShortcut(index) } label: {
                 Text(empty ? "Empty" : shortcut.name)
                     .lineLimit(1)
-                    .foregroundStyle(empty ? .secondary : .primary)
+                    .foregroundStyle(empty ? .secondary : (loaded ? accent : .primary))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
@@ -685,7 +689,7 @@ struct LauncherView: View {
                     shortcutName = empty ? config.trimmedAddress : shortcut.name
                     namingShortcut = index
                 } label: {
-                    Image(systemName: "bookmark")
+                    Image(systemName: loaded ? "bookmark.fill" : "bookmark")
                 }
                 .disabled(config.trimmedAddress.isEmpty)
                 .help("Save the server and passwords above in this shortcut")
@@ -705,6 +709,11 @@ struct LauncherView: View {
             .help("Connect to \(shortcut.name)")
         }
         .controlSize(.small)
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(loaded ? accent.opacity(0.22) : Color.clear)
+        )
     }
 
     @ViewBuilder private var botRows: some View {

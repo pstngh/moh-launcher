@@ -1070,25 +1070,46 @@ struct BulletField: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextFieldDelegate {
         var binding: Binding<String>
         var real: String
+        private var masking = false
 
         init(text: Binding<String>) {
             binding = text
             real = text.wrappedValue
         }
 
-        func control(_ control: NSControl, textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString: String?) -> Bool {
-            let insert = replacementString ?? ""
-            let current = real as NSString
-            let start = min(max(range.location, 0), current.length)
-            let length = min(max(range.length, 0), current.length - start)
-            let next = NSMutableString(string: current)
-            next.replaceCharacters(in: NSRange(location: start, length: length), with: insert)
+        /// The field shows the typed characters first. This replaces them with
+        /// dots afterwards. Rejecting the keystroke does not work: macOS puts
+        /// the character back.
+        func controlTextDidChange(_ note: Notification) {
+            guard !masking, let field = note.object as? NSTextField,
+                  let editor = field.currentEditor() as? NSTextView else { return }
+            let shown = editor.string as NSString
+            let previous = real as NSString
+            let next = NSMutableString()
+            var consumed = 0
+            let bullet: unichar = 0x2022
+            for index in 0..<shown.length {
+                let character = shown.character(at: index)
+                if character == bullet {
+                    if consumed < previous.length {
+                        next.append(previous.substring(with: NSRange(location: consumed, length: 1)))
+                        consumed += 1
+                    }
+                } else {
+                    var typed = character
+                    next.append(NSString(characters: &typed, length: 1) as String)
+                }
+            }
+            masking = true
             real = next as String
             binding.wrappedValue = real
             let masked = String(repeating: "•", count: (real as NSString).length)
-            textView.string = masked
-            textView.setSelectedRange(NSRange(location: min(start + (insert as NSString).length, (masked as NSString).length), length: 0))
-            return false
+            if editor.string != masked {
+                let caret = editor.selectedRange()
+                editor.string = masked
+                editor.setSelectedRange(NSRange(location: min(caret.location, (masked as NSString).length), length: 0))
+            }
+            masking = false
         }
     }
 }

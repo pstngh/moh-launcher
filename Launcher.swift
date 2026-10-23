@@ -8,8 +8,9 @@ import Foundation
 
 // MARK: - Settings
 
-/// Maps offered for bot matches. Spearhead also loads the Allied Assault
-/// maps, and Breakthrough loads both, so each list starts with its own.
+/// Maps offered for bot matches. The path is what the game loads. The name
+/// is what the menu shows. Spearhead also loads the Allied Assault maps,
+/// and Breakthrough loads both, so each list starts with its own.
 let aaMaps = [
     "dm/downladder", "dm/brownffa", "dm/vents", "dm/flag", "dm/main", "dm/alpha", "dm/crnodoors",
     "dm/mohdm1", "dm/mohdm6", "dm/mohdm7", "obj/obj_team2", "obj/obj_team4",
@@ -24,6 +25,49 @@ let btMaps = [
     "obj/MP_Kasserine_TOW", "obj/MP_MonteBattaglia_TOW", "obj/MP_MonteCassino_TOW",
     "lib/MP_Anzio_LIB", "lib/MP_BizerteHarbor_LIB", "lib/MP_Ship_LIB", "lib/MP_Tunisia_LIB",
 ]
+
+let mapNames = [
+    "dm/downladder": "The Hunt",
+    "dm/brownffa": "Sniper's Last Stand",
+    "dm/vents": "V2 Rocket Facility",
+    "dm/flag": "Omaha Beach",
+    "dm/main": "The Bridge",
+    "dm/alpha": "Southern France",
+    "dm/crnodoors": "The Crossroads",
+    "dm/mohdm1": "Southern France",
+    "dm/mohdm6": "Stalingrad",
+    "dm/mohdm7": "Algiers",
+    "obj/obj_team2": "V2 Rocket Facility",
+    "obj/obj_team4": "The Bridge",
+    "dm/MP_Bahnhof_DM": "Bahnhof",
+    "dm/MP_Bazaar_DM": "Bazaar",
+    "dm/MP_Brest_DM": "Brest",
+    "dm/MP_Gewitter_DM": "Gewitter",
+    "dm/MP_Holland_DM": "Holland",
+    "dm/MP_Malta_DM": "Malta",
+    "dm/MP_Stadt_DM": "Stadt",
+    "dm/MP_Unterseite_DM": "Unterseite",
+    "dm/MP_Verschneit_DM": "Verschneit",
+    "obj/MP_Ardennes_TOW": "Ardennes",
+    "obj/MP_Berlin_TOW": "Berlin",
+    "obj/MP_Druckkammern_TOW": "Druckkammern",
+    "obj/MP_Flughafen_TOW": "Flughafen",
+    "obj/MP_BizerteFort_OBJ": "Bizerte Fort",
+    "obj/MP_Bologna_OBJ": "Bologna",
+    "obj/MP_Castello_OBJ": "Castello",
+    "obj/MP_Palermo_OBJ": "Palermo",
+    "obj/MP_Kasserine_TOW": "Kasserine",
+    "obj/MP_MonteBattaglia_TOW": "Monte Battaglia",
+    "obj/MP_MonteCassino_TOW": "Monte Cassino",
+    "lib/MP_Anzio_LIB": "Anzio",
+    "lib/MP_BizerteHarbor_LIB": "Bizerte Harbor",
+    "lib/MP_Ship_LIB": "Ship",
+    "lib/MP_Tunisia_LIB": "Tunisia",
+]
+
+func mapName(_ path: String) -> String {
+    mapNames[path] ?? path
+}
 
 func maps(for game: Int) -> [String] {
     switch game {
@@ -602,7 +646,7 @@ struct LauncherView: View {
     private func shortcutRow(_ index: Int) -> some View {
         let shortcut = config.shortcuts[index]
         let empty = shortcut.name.isEmpty
-        return Row(index == 0 ? "Shortcuts" : "") {
+        return Row("") {
             Button { config.applyShortcut(index) } label: {
                 Text(empty ? "Empty" : shortcut.name)
                     .lineLimit(1)
@@ -651,11 +695,12 @@ struct LauncherView: View {
             .fixedSize()
             .help("Free-for-all or team deathmatch")
             Picker("", selection: $config.map) {
-                ForEach(maps(for: config.game), id: \.self) { Text($0).tag($0) }
+                ForEach(maps(for: config.game), id: \.self) { path in
+                    Text(mapName(path)).tag(path)
+                }
             }
             .labelsHidden()
-        }
-        Row("Bots") {
+            Text("Bots").foregroundStyle(.secondary)
             NumberField(value: $config.bots, range: 1...maxBots, step: 1)
             Text("Team").foregroundStyle(.secondary)
             Picker("", selection: $config.botTeam) {
@@ -687,15 +732,15 @@ struct LauncherView: View {
             CrosshairPreview(config: config)
                 .frame(width: labelWidth, height: 44)
                 .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.black.opacity(0.85)))
-            Grid(horizontalSpacing: 8, verticalSpacing: 6) {
-                GridRow {
+            VStack(spacing: 6) {
+                HStack(spacing: 8) {
                     LabeledSlider("Length", value: $config.crosshairLength, range: Config.crosshairLengths)
                     LabeledSlider("Gap", value: $config.crosshairGap, range: Config.crosshairGaps)
                 }
-                GridRow {
+                HStack(spacing: 8) {
                     LabeledSlider("Thickness", value: $config.crosshairThickness, range: Config.crosshairThicknesses)
-                    HStack(spacing: 8) {
-                        Text("Color").foregroundStyle(.secondary).frame(width: 64, alignment: .leading)
+                    HStack(spacing: 6) {
+                        Text("Color").foregroundStyle(.secondary)
                         Picker("", selection: $config.crosshairColor) {
                             ForEach(Config.crosshairColors, id: \.hex) { color in
                                 Text(color.name).tag(color.hex)
@@ -703,13 +748,16 @@ struct LauncherView: View {
                         }
                         .labelsHidden()
                         .fixedSize()
+                        Spacer(minLength: 4)
                         Button("Reset") {
                             config.crosshairLength = Config.crosshairDefaults.length
                             config.crosshairGap = Config.crosshairDefaults.gap
                             config.crosshairThickness = Config.crosshairDefaults.thickness
                             config.crosshairColor = Config.crosshairDefaults.color
                         }
+                        .fixedSize()
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }

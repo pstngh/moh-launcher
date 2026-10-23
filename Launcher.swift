@@ -70,10 +70,14 @@ func mapName(_ path: String) -> String {
 }
 
 func maps(for game: Int) -> [String] {
+    let paths: [String]
     switch game {
-    case 0: return aaMaps
-    case 1: return shMaps + aaMaps
-    default: return btMaps + shMaps + aaMaps
+    case 0: paths = aaMaps
+    case 1: paths = shMaps + aaMaps
+    default: paths = btMaps + shMaps + aaMaps
+    }
+    return paths.sorted {
+        mapName($0).localizedCaseInsensitiveCompare(mapName($1)) == .orderedAscending
     }
 }
 
@@ -118,7 +122,7 @@ struct Config: Equatable {
     var password = ""
     var rcon = ""
     var shortcuts = [forte] + Array(repeating: Shortcut(), count: shortcutCount - 1)
-    var gametype = 1  // 1 free-for-all, 2 team match
+    var gametype = 1  // 1 free-for-all, 2 team match, 4 objective
     var map = aaMaps[0]
     var bots = 3
     var botTeam = "auto"
@@ -327,7 +331,9 @@ struct Config: Equatable {
             }
         }
         shortcuts[0] = forte
-        gametype = choice("bot_game_type", 1...2, gametype)
+        if let saved = Int(values["bot_game_type"] ?? ""), [1, 2, 4].contains(saved) {
+            gametype = saved
+        }
         map = values["bot_map"].flatMap { maps(for: game).contains($0) ? $0 : nil } ?? maps(for: game)[0]
         bots = number("bot_count", 1...maxBots, bots)
         botTeam = values["bot_team"].flatMap { botTeams.contains($0) ? $0 : nil } ?? botTeam
@@ -453,7 +459,6 @@ import SwiftUI
 /// Pure red. A 0K blue-light filter removes green and blue, so this is the
 /// only accent that stays visible, and it stays darker than white text.
 let accent = Color(red: 196 / 255, green: 0, blue: 0)
-let labelWidth: CGFloat = 76
 
 let folder = Bundle.main.bundleURL.deletingLastPathComponent()
 let settingsFile = folder.appendingPathComponent("launcher.cfg")
@@ -627,28 +632,30 @@ struct LauncherView: View {
     // MARK: Cards
 
     @ViewBuilder private var serverRows: some View {
-        HStack(spacing: 6) {
-            Text("Nickname").foregroundStyle(.secondary).frame(width: labelWidth, alignment: .trailing)
-            TextField("", text: $config.name).textFieldStyle(.roundedBorder)
-            Text("Server").foregroundStyle(.secondary)
-            TextField("address:port", text: $config.address).textFieldStyle(.roundedBorder)
-        }
-        HStack(spacing: 6) {
-            Text("Password").foregroundStyle(.secondary).frame(width: labelWidth, alignment: .trailing)
-            SecureField("", text: $config.password).textFieldStyle(.roundedBorder)
-            Text("RCON").foregroundStyle(.secondary)
-            SecureField("", text: $config.rcon).textFieldStyle(.roundedBorder)
-        }
-        Divider()
-        Grid(horizontalSpacing: 12, verticalSpacing: 2) {
+        Grid(horizontalSpacing: 12, verticalSpacing: 6) {
             GridRow {
+                serverField("Nickname") { TextField("", text: $config.name) }
                 shortcutRow(0)
+            }
+            GridRow {
+                serverField("Password") { SecureField("", text: $config.password) }
                 shortcutRow(1)
             }
             GridRow {
+                serverField("Server") { TextField("address:port", text: $config.address) }
                 shortcutRow(2)
+            }
+            GridRow {
+                serverField("RCON") { SecureField("", text: $config.rcon) }
                 shortcutRow(3)
             }
+        }
+    }
+
+    private func serverField<Field: View>(_ label: String, @ViewBuilder field: () -> Field) -> some View {
+        HStack(spacing: 6) {
+            Text(label).foregroundStyle(.secondary).frame(width: 72, alignment: .trailing)
+            field().textFieldStyle(.roundedBorder)
         }
     }
 
@@ -696,10 +703,11 @@ struct LauncherView: View {
             Picker("", selection: $config.gametype) {
                 Text("FFA").tag(1)
                 Text("TDM").tag(2)
+                Text("OBJ").tag(4)
             }
             .labelsHidden()
             .fixedSize()
-            .help("Free-for-all or team deathmatch")
+            .help("Free-for-all, team deathmatch, or objective")
             Picker("", selection: $config.map) {
                 ForEach(maps(for: config.game), id: \.self) { path in
                     Text(mapName(path)).tag(path)

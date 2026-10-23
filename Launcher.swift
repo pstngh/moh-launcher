@@ -182,12 +182,10 @@ struct Config: Equatable {
         rcon = shortcuts[index].rcon
     }
 
-    /// A run speed left at either game's default follows the new game, and
-    /// a map the new game cannot load gives way to its first map.
+    /// The run speed follows the game, and a map the new game cannot load
+    /// gives way to its first map.
     mutating func gameChanged() {
-        if runSpeed == Config.runSpeed(for: 0) || runSpeed == Config.runSpeed(for: 1) {
-            runSpeed = Config.runSpeed(for: game)
-        }
+        runSpeed = Config.runSpeed(for: game)
         if !maps(for: game).contains(map) {
             map = maps(for: game)[0]
         }

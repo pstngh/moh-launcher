@@ -641,28 +641,21 @@ struct LauncherView: View {
     @ViewBuilder private var serverRows: some View {
         Grid(horizontalSpacing: 12, verticalSpacing: 6) {
             GridRow {
-                serverField("Nickname") { TextField("", text: $config.name) }
+                TextField("Nickname", text: $config.name).textFieldStyle(.roundedBorder)
                 shortcutRow(0)
             }
             GridRow {
-                serverField("Password") { SecureField("", text: $config.password) }
+                TextField("IP", text: $config.address).textFieldStyle(.roundedBorder)
                 shortcutRow(1)
             }
             GridRow {
-                serverField("Server") { TextField("address:port", text: $config.address) }
+                SecureField("Password", text: $config.password).textFieldStyle(.roundedBorder)
                 shortcutRow(2)
             }
             GridRow {
-                serverField("RCON") { SecureField("", text: $config.rcon) }
+                SecureField("RCON", text: $config.rcon).textFieldStyle(.roundedBorder)
                 shortcutRow(3)
             }
-        }
-    }
-
-    private func serverField<Field: View>(_ label: String, @ViewBuilder field: () -> Field) -> some View {
-        HStack(spacing: 6) {
-            Text(label).foregroundStyle(.secondary).frame(width: 72, alignment: .trailing)
-            field().textFieldStyle(.roundedBorder)
         }
     }
 
@@ -704,7 +697,7 @@ struct LauncherView: View {
                 config.applyShortcut(index)
                 launch(play: false)
             } label: {
-                Image(systemName: "play.fill")
+                Image(systemName: "link")
             }
             .disabled(empty)
             .help("Connect to \(shortcut.name)")

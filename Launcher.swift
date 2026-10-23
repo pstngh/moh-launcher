@@ -649,11 +649,11 @@ struct LauncherView: View {
                 shortcutRow(1)
             }
             GridRow {
-                SecureField("Password", text: $config.password).textFieldStyle(.roundedBorder)
+                BulletField("Password", text: $config.password)
                 shortcutRow(2)
             }
             GridRow {
-                SecureField("RCON", text: $config.rcon).textFieldStyle(.roundedBorder)
+                BulletField("RCON", text: $config.rcon)
                 shortcutRow(3)
             }
         }
@@ -697,7 +697,7 @@ struct LauncherView: View {
                 config.applyShortcut(index)
                 launch(play: false)
             } label: {
-                Image(systemName: "link")
+                Image(systemName: "arrow.right")
             }
             .disabled(empty)
             .help("Connect to \(shortcut.name)")
@@ -999,6 +999,70 @@ private struct TightNumber: NSViewRepresentable {
             let clamped = min(max(number, range.lowerBound), range.upperBound)
             binding.wrappedValue = clamped
             field.stringValue = String(clamped)
+        }
+    }
+}
+
+/// A password box that shows dots but is not a secure field, so macOS and
+/// password apps do not offer to fill it.
+struct BulletField: NSViewRepresentable {
+    let placeholder: String
+    @Binding var text: String
+
+    init(_ placeholder: String, text: Binding<String>) {
+        self.placeholder = placeholder
+        _text = text
+    }
+
+    func makeNSView(context: Context) -> NSTextField {
+        let field = NSTextField()
+        field.placeholderString = placeholder
+        field.isBezeled = true
+        field.bezelStyle = .roundedBezel
+        field.font = .systemFont(ofSize: NSFont.systemFontSize)
+        field.isAutomaticTextCompletionEnabled = false
+        field.delegate = context.coordinator
+        field.stringValue = String(repeating: "•", count: text.count)
+        context.coordinator.real = text
+        return field
+    }
+
+    func updateNSView(_ field: NSTextField, context: Context) {
+        context.coordinator.binding = $text
+        guard context.coordinator.real != text else { return }
+        context.coordinator.real = text
+        let masked = String(repeating: "•", count: text.count)
+        if let editor = field.currentEditor() as? NSTextView {
+            editor.string = masked
+            editor.setSelectedRange(NSRange(location: masked.count, length: 0))
+        } else {
+            field.stringValue = masked
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        var binding: Binding<String>
+        var real: String
+
+        init(text: Binding<String>) {
+            binding = text
+            real = text.wrappedValue
+        }
+
+        func control(_ control: NSControl, textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString: String?) -> Bool {
+            let insert = replacementString ?? ""
+            let start = real.index(real.startIndex, offsetBy: min(range.location, real.count))
+            let end = real.index(start, offsetBy: min(range.length, real.distance(from: start, to: real.endIndex)))
+            real.replaceSubrange(start..<end, with: insert)
+            binding.wrappedValue = real
+            let masked = String(repeating: "•", count: real.count)
+            textView.string = masked
+            textView.setSelectedRange(NSRange(location: min(range.location + (insert as NSString).length, masked.count), length: 0))
+            return false
         }
     }
 }

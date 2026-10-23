@@ -1,7 +1,7 @@
 // launcher.app: joins a server or starts a local bot match.
 //
 // It sits in the game folder next to the game. Connect starts openmohaa.app.
-// Play starts mohbots.app. Settings are kept in launcher.cfg beside it.
+// Bots starts mohbots.app. Settings are kept in launcher.cfg beside it.
 // bundle.sh builds it.
 
 import Foundation
@@ -560,13 +560,13 @@ struct LauncherView: View {
             gamePicker
             Card { serverRows }
             Card { botRows }
+            Card { crosshairRows }
             HStack(spacing: 6) {
                 LaunchButton(title: "Connect", icon: "bolt.fill") { launch(play: false) }
                     .help("Joins the server in Allied Assault.")
-                LaunchButton(title: "Play", icon: "play.fill") { launch(play: true) }
+                LaunchButton(title: "Bots", icon: "person.2.fill") { launch(play: true) }
                     .help("Starts a bot match with cheats on, so dog and the other cheats work.")
             }
-            Card { crosshairRows }
         }
         .padding(8)
         .frame(width: 520)

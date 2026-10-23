@@ -102,10 +102,11 @@ struct Config: Equatable {
         game == 0 ? 250 : 287
     }
 
-    /// Allied Assault servers turn an sv_runspeed of 287 back into 250 while
-    /// sprint is off, so it stops one short of that.
+    /// The same scale for every game, so the knob stays put when the number
+    /// does not change. Allied Assault servers turn 287 back into 250.
     static func runSpeeds(for game: Int) -> ClosedRange<Int> {
-        game == 0 ? 250...286 : 250...287
+        _ = game
+        return 250...287
     }
 
     /// One of the named crosshair colors, or white.
@@ -715,12 +716,13 @@ struct LauncherView: View {
         }
         .help("Crosshair sizes are in pixels at 1080p and scale with the resolution.")
         HStack(spacing: 8) {
-            Text("Video").foregroundStyle(.secondary).frame(width: labelWidth, alignment: .trailing)
             Toggle("Fullscreen", isOn: $config.fullscreen)
-            Picker("Resolution", selection: $config.resolution) {
+            Picker("", selection: $config.resolution) {
                 ForEach(resolutions, id: \.self) { Text($0).tag($0) }
             }
+            .labelsHidden()
             .fixedSize()
+            Spacer(minLength: 0)
             verifyButton
         }
     }

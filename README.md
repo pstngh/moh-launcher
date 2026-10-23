@@ -2,7 +2,7 @@
 
 MoH Launcher for MoHAA. The window is black, with red controls.
 
-![Launcher](preview.jpg?v=17)
+![Launcher](preview.jpg?v=18)
 
 Connect opens `openmohaa.app`. Bots opens `mohbots.app`. The first shortcut is Forte FFA and cannot be changed.
 

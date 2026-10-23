@@ -569,7 +569,7 @@ struct LauncherView: View {
             Card { botRows }
             Card { crosshairRows }
             HStack(spacing: 6) {
-                LaunchButton(title: "Connect", icon: "bolt.fill") { launch(play: false) }
+                LaunchButton(title: "Connect", icon: "play.fill") { launch(play: false) }
                     .help("Joins the server in Allied Assault.")
                 LaunchButton(title: "Bots", icon: "person.2.fill") { launch(play: true) }
                     .help("Starts a bot match with cheats on, so dog and the other cheats work.")
@@ -697,7 +697,7 @@ struct LauncherView: View {
                 config.applyShortcut(index)
                 launch(play: false)
             } label: {
-                Image(systemName: "arrow.right")
+                Image(systemName: "play.fill")
             }
             .disabled(empty)
             .help("Connect to \(shortcut.name)")

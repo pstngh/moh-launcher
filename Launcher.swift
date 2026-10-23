@@ -917,7 +917,8 @@ struct Card<Content: View>: View {
     }
 }
 
-/// A number box that reads as "3 Bots" or "100 HP".
+/// A number box that reads as "4 Bots" or "250 HP", with the same inset and
+/// arrow size as the menus beside it.
 struct UnitField: View {
     @Binding var value: Int
     let range: ClosedRange<Int>
@@ -926,22 +927,86 @@ struct UnitField: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            TextField(
-                "",
-                value: Binding(get: { value }, set: { value = min(max($0, range.lowerBound), range.upperBound) }),
-                format: .number.grouping(.never)
-            )
-            .textFieldStyle(.plain)
-            .multilineTextAlignment(.trailing)
-            .monospacedDigit()
-            .frame(width: range.upperBound > 99 ? 34 : 20)
+            TightNumber(value: $value, range: range)
             Text(unit).foregroundStyle(.secondary)
-            Stepper("", value: $value, in: range, step: step).labelsHidden()
+            Spacer(minLength: 6)
+            VStack(spacing: 0) {
+                stepButton("chevron.up") { value = min(value + step, range.upperBound) }
+                stepButton("chevron.down") { value = max(value - step, range.lowerBound) }
+            }
         }
-        .padding(.leading, 6)
-        .padding(.trailing, 2)
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.primary.opacity(0.08)))
+        .padding(.leading, 8)
+        .padding(.trailing, 6)
+        .frame(height: 22)
+        .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.primary.opacity(0.08)))
         .fixedSize()
+    }
+
+    private func stepButton(_ name: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.system(size: 7, weight: .semibold))
+                .frame(width: 12, height: 8)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+    }
+}
+
+/// A borderless number that sits on the same line as the menus' titles.
+private struct TightNumber: NSViewRepresentable {
+    @Binding var value: Int
+    let range: ClosedRange<Int>
+
+    func makeNSView(context: Context) -> NSTextField {
+        let field = NSTextField(string: String(value))
+        field.isBezeled = false
+        field.isBordered = false
+        field.drawsBackground = false
+        field.focusRingType = .none
+        field.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+        field.alignment = .left
+        field.maximumNumberOfLines = 1
+        field.delegate = context.coordinator
+        field.setContentHuggingPriority(.required, for: .horizontal)
+        return field
+    }
+
+    func updateNSView(_ field: NSTextField, context: Context) {
+        context.coordinator.range = range
+        context.coordinator.binding = $value
+        if field.currentEditor() == nil, field.stringValue != String(value) {
+            field.stringValue = String(value)
+        }
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSTextField, context: Context) -> CGSize? {
+        let sample = String(repeating: "0", count: max(1, String(range.upperBound).count))
+        let width = (sample as NSString).size(withAttributes: [.font: nsView.font as Any]).width
+        return CGSize(width: width + 2, height: 16)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(value: $value, range: range)
+    }
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        var binding: Binding<Int>
+        var range: ClosedRange<Int>
+
+        init(value: Binding<Int>, range: ClosedRange<Int>) {
+            binding = value
+            self.range = range
+        }
+
+        func controlTextDidEndEditing(_ note: Notification) {
+            guard let field = note.object as? NSTextField else { return }
+            let number = Int(field.stringValue) ?? binding.wrappedValue
+            let clamped = min(max(number, range.lowerBound), range.upperBound)
+            binding.wrappedValue = clamped
+            field.stringValue = String(clamped)
+        }
     }
 }
 

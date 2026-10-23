@@ -83,7 +83,7 @@ func maps(for game: Int) -> [String] {
 
 let resolutions = [
     "800x600", "960x720", "1024x768", "1152x864", "1280x720", "1280x960",
-    "1280x1024", "1344x1008", "1600x1200", "1920x1080",
+    "1344x1008", "1600x1200", "1920x1080",
 ]
 
 /// The previous launcher saved the resolution as an index into this list.
@@ -152,7 +152,7 @@ struct Config: Equatable {
 
     /// 250 is Allied Assault and 287 is Spearhead and Breakthrough. The
     /// others sit between those two.
-    static let runSpeeds = [250, 260, 270, 280, 287]
+    static let runSpeeds = [250, 255, 260, 265, 270, 275, 280, 287]
 
     static func nearestSpeed(_ speed: Int) -> Int {
         runSpeeds.min { abs($0 - speed) < abs($1 - speed) } ?? runSpeeds[0]

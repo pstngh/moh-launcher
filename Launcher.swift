@@ -27,13 +27,13 @@ let btMaps = [
 ]
 
 let mapNames = [
-    "dm/downladder": "The Hunt",
-    "dm/brownffa": "Sniper's Last Stand",
-    "dm/vents": "V2 Rocket Facility",
-    "dm/flag": "Omaha Beach",
-    "dm/main": "The Bridge",
-    "dm/alpha": "Southern France",
-    "dm/crnodoors": "The Crossroads",
+    "dm/downladder": "V2 - Down Ladder",
+    "dm/brownffa": "Bridge - Brown Door",
+    "dm/vents": "V2 - Vent Room",
+    "dm/flag": "V2 - Flag Room",
+    "dm/main": "V2 - Up Main",
+    "dm/alpha": "V2 - Alpha",
+    "dm/crnodoors": "V2 - Control Room",
     "dm/mohdm1": "Southern France",
     "dm/mohdm6": "Stalingrad",
     "dm/mohdm7": "Algiers",
@@ -146,10 +146,12 @@ struct Config: Equatable {
         game == 0 ? 250 : 287
     }
 
-    /// Allied Assault servers turn an sv_runspeed of 287 back into 250 while
-    /// sprint is off, so it stops one short of that.
-    static func runSpeeds(for game: Int) -> ClosedRange<Int> {
-        game == 0 ? 250...286 : 250...287
+    /// 250 is Allied Assault and 287 is Spearhead and Breakthrough. The
+    /// others sit between those two.
+    static let runSpeeds = [250, 260, 270, 280, 287]
+
+    static func nearestSpeed(_ speed: Int) -> Int {
+        runSpeeds.min { abs($0 - speed) < abs($1 - speed) } ?? runSpeeds[0]
     }
 
     /// One of the named crosshair colors, or white.
@@ -176,13 +178,12 @@ struct Config: Equatable {
         rcon = shortcuts[index].rcon
     }
 
-    /// A run speed left at the old game's default follows the new game, and
+    /// A run speed left at either game's default follows the new game, and
     /// a map the new game cannot load gives way to its first map.
     mutating func gameChanged() {
         if runSpeed == Config.runSpeed(for: 0) || runSpeed == Config.runSpeed(for: 1) {
             runSpeed = Config.runSpeed(for: game)
         }
-        runSpeed = min(runSpeed, Config.runSpeeds(for: game).upperBound)
         if !maps(for: game).contains(map) {
             map = maps(for: game)[0]
         }
@@ -331,7 +332,7 @@ struct Config: Equatable {
         bots = number("bot_count", 1...maxBots, bots)
         botTeam = values["bot_team"].flatMap { botTeams.contains($0) ? $0 : nil } ?? botTeam
         health = number("player_health", 1...1000, health)
-        runSpeed = number("run_speed", Config.runSpeeds(for: game), Config.runSpeed(for: game))
+        runSpeed = Config.nearestSpeed(Int(values["run_speed"] ?? "") ?? Config.runSpeed(for: game))
         infiniteAmmo = flag("infinite_ammo", infiniteAmmo)
         painAnims = flag("pain_anims", painAnims)
         fullscreen = flag("fullscreen_enabled", fullscreen)
@@ -551,6 +552,7 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 6) {
+            gamePicker
             Card { serverRows }
             Card { botRows }
             HStack(spacing: 6) {
@@ -683,10 +685,7 @@ struct LauncherView: View {
     }
 
     @ViewBuilder private var botRows: some View {
-        Row("Game") {
-            gamePicker
-        }
-        Row("Map") {
+        HStack(spacing: 6) {
             Picker("", selection: $config.gametype) {
                 Text("FFA").tag(1)
                 Text("TDM").tag(2)
@@ -700,9 +699,8 @@ struct LauncherView: View {
                 }
             }
             .labelsHidden()
-            Text("Bots").foregroundStyle(.secondary)
-            NumberField(value: $config.bots, range: 1...maxBots, step: 1)
-            Text("Team").foregroundStyle(.secondary)
+            UnitField(value: $config.bots, range: 1...maxBots, step: 1, unit: "Bots")
+                .help("How many bots join the match")
             Picker("", selection: $config.botTeam) {
                 Text("Auto").tag("auto")
                 Text("Allies").tag("allies")
@@ -712,13 +710,18 @@ struct LauncherView: View {
             .fixedSize()
             .help("The team the bots join")
         }
-        Row("Health") {
-            NumberField(value: $config.health, range: 1...1000, step: 25)
-            Text("Speed").foregroundStyle(.secondary)
-            IntSlider(value: $config.runSpeed, range: Config.runSpeeds(for: config.game))
+        HStack(spacing: 6) {
+            UnitField(value: $config.health, range: 1...1000, step: 25, unit: "HP")
+                .help("Player health")
+            Picker("", selection: $config.runSpeed) {
+                ForEach(Config.runSpeeds, id: \.self) { Text("\($0)").tag($0) }
+            }
+            .labelsHidden()
+            .fixedSize()
+            .help("250 is Allied Assault. 287 is Spearhead and Breakthrough.")
+            Spacer(minLength: 0)
         }
-        .help("Allied Assault: 250, Spearhead and Breakthrough: 287")
-        Row("") {
+        HStack(spacing: 6) {
             Toggle("Infinite ammo", isOn: $config.infiniteAmmo)
                 .help("Clips never empty, so weapons never need reloading.")
             Toggle("SH/BT animations", isOn: $config.painAnims)
@@ -763,12 +766,12 @@ struct LauncherView: View {
         }
         .help("Crosshair sizes are in pixels at 1080p and scale with the resolution.")
         HStack(spacing: 8) {
-            Toggle("Fullscreen", isOn: $config.fullscreen)
             Picker("", selection: $config.resolution) {
                 ForEach(resolutions, id: \.self) { Text($0).tag($0) }
             }
             .labelsHidden()
             .fixedSize()
+            Toggle("Fullscreen", isOn: $config.fullscreen)
             Spacer(minLength: 0)
             verifyButton
         }
@@ -912,23 +915,30 @@ struct Row<Content: View>: View {
     }
 }
 
-/// A number box with a stepper that keeps whole numbers in range.
-struct NumberField: View {
+/// A number box that reads as "3 Bots" or "100 HP".
+struct UnitField: View {
     @Binding var value: Int
     let range: ClosedRange<Int>
     let step: Int
+    let unit: String
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 4) {
             TextField(
                 "",
                 value: Binding(get: { value }, set: { value = min(max($0, range.lowerBound), range.upperBound) }),
                 format: .number.grouping(.never)
             )
-            .textFieldStyle(.roundedBorder)
-            .frame(width: 54)
+            .textFieldStyle(.plain)
+            .multilineTextAlignment(.trailing)
+            .frame(width: 36)
+            Text(unit).foregroundStyle(.secondary)
             Stepper("", value: $value, in: range, step: step).labelsHidden()
         }
+        .padding(.leading, 6)
+        .padding(.trailing, 2)
+        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.primary.opacity(0.08)))
+        .fixedSize()
     }
 }
 

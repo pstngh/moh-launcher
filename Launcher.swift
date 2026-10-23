@@ -677,7 +677,7 @@ struct LauncherView: View {
             Button { config.applyShortcut(index) } label: {
                 Text(empty ? "Empty" : shortcut.name)
                     .lineLimit(1)
-                    .foregroundStyle(empty ? .secondary : (loaded ? accent : .primary))
+                    .foregroundStyle(empty ? .secondary : .primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
@@ -690,6 +690,7 @@ struct LauncherView: View {
                     namingShortcut = index
                 } label: {
                     Image(systemName: loaded ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(loaded ? accent : .primary)
                 }
                 .disabled(config.trimmedAddress.isEmpty)
                 .help("Save the server and passwords above in this shortcut")
@@ -710,9 +711,10 @@ struct LauncherView: View {
         }
         .controlSize(.small)
         .padding(.horizontal, 4)
-        .background(
+        .padding(.vertical, 1)
+        .overlay(
             RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(loaded ? accent.opacity(0.22) : Color.clear)
+                .strokeBorder(loaded ? accent : Color.clear, lineWidth: 1.5)
         )
     }
 

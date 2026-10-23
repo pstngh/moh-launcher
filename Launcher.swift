@@ -102,11 +102,10 @@ struct Config: Equatable {
         game == 0 ? 250 : 287
     }
 
-    /// The same scale for every game, so the knob stays put when the number
-    /// does not change. Allied Assault servers turn 287 back into 250.
+    /// Allied Assault servers turn an sv_runspeed of 287 back into 250 while
+    /// sprint is off, so it stops one short of that.
     static func runSpeeds(for game: Int) -> ClosedRange<Int> {
-        _ = game
-        return 250...287
+        game == 0 ? 250...286 : 250...287
     }
 
     /// One of the named crosshair colors, or white.

@@ -158,6 +158,15 @@ struct Config: Equatable {
         runSpeeds.min { abs($0 - speed) < abs($1 - speed) } ?? runSpeeds[0]
     }
 
+    /// 250 is Allied Assault. 287 is Spearhead, and Breakthrough uses it too.
+    static func runSpeedLabel(_ speed: Int) -> String {
+        switch speed {
+        case 250: return "250 AA"
+        case 287: return "287 SH"
+        default: return "\(speed) Runspeed"
+        }
+    }
+
     /// One of the named crosshair colors, or white.
     static func color(_ value: String) -> String {
         let hex = (value.hasPrefix("#") ? String(value.dropFirst()) : value).uppercased()
@@ -729,7 +738,7 @@ struct LauncherView: View {
             UnitField(value: $config.health, range: 1...1000, step: 25, unit: "HP")
                 .help("Player health")
             Picker("", selection: $config.runSpeed) {
-                ForEach(Config.runSpeeds, id: \.self) { Text("\($0) Runspeed").tag($0) }
+                ForEach(Config.runSpeeds, id: \.self) { Text(Config.runSpeedLabel($0)).tag($0) }
             }
             .labelsHidden()
             .fixedSize()

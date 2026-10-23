@@ -86,6 +86,15 @@ let resolutions = [
     "1344x1008", "1600x1200", "1920x1080",
 ]
 
+/// Width and height of a resolution, or 1920x1080 when the text is not one.
+func pixelSize(_ resolution: String) -> (width: Int, height: Int) {
+    let parts = resolution.split(separator: "x")
+    guard parts.count == 2, let width = Int(parts[0]), let height = Int(parts[1]), width > 0, height > 0 else {
+        return (1920, 1080)
+    }
+    return (width, height)
+}
+
 /// The previous launcher saved the resolution as an index into this list.
 let oldResolutions = [
     "800x600", "960x720", "1024x768", "1152x864", "1280x720", "1280x1024",
@@ -232,14 +241,14 @@ struct Config: Equatable {
     /// Arguments shared by Connect and Play. The engine keeps configs and
     /// other user data in the game folder by itself.
     func commonArgs() -> [String] {
-        let size = resolution.split(separator: "x").map(String.init)
+        let size = pixelSize(resolution)
         var args: [String] = []
         if !name.isEmpty {
             args += set("name", name)
         }
         args += set("cl_playintro", 0)
         args += set("r_fullscreen", fullscreen)
-        args += set("r_mode", -1) + set("r_customwidth", size[0]) + set("r_customheight", size[1])
+        args += set("r_mode", -1) + set("r_customwidth", size.width) + set("r_customheight", size.height)
         args += set("cg_crosshair_length", crosshairLength) + set("cg_crosshair_gap", crosshairGap)
         args += set("cg_crosshair_thickness", crosshairThickness) + set("cg_crosshair_color", crosshairColor)
         return args
@@ -358,25 +367,33 @@ struct Config: Equatable {
         crosshairColor = values["crosshair_color"].map(Config.color) ?? crosshairColor
     }
 
-    init() {}
-
     var text: String {
         var lines = [
-            "game=\(game)", "nickname=\(name)", "ip=\(address)", "password=\(password)", "rcon=\(rcon)",
-            "bot_game_type=\(gametype)", "bot_map=\(map)", "bot_count=\(bots)", "bot_team=\(botTeam)",
-            "player_health=\(health)", "run_speed=\(runSpeed)", "infinite_ammo=\(infiniteAmmo ? 1 : 0)",
-            "pain_anims=\(painAnims ? 1 : 0)",
-            "fullscreen_enabled=\(fullscreen ? 1 : 0)", "resolution=\(resolution)",
-            "crosshair_length=\(crosshairLength)", "crosshair_gap=\(crosshairGap)",
-            "crosshair_thickness=\(crosshairThickness)", "crosshair_color=\(crosshairColor)",
+            line("game", game), line("nickname", name), line("ip", address), line("password", password), line("rcon", rcon),
+            line("bot_game_type", gametype), line("bot_map", map), line("bot_count", bots), line("bot_team", botTeam),
+            line("player_health", health), line("run_speed", runSpeed), line("infinite_ammo", infiniteAmmo ? 1 : 0),
+            line("pain_anims", painAnims ? 1 : 0),
+            line("fullscreen_enabled", fullscreen ? 1 : 0), line("resolution", resolution),
+            line("crosshair_length", crosshairLength), line("crosshair_gap", crosshairGap),
+            line("crosshair_thickness", crosshairThickness), line("crosshair_color", crosshairColor),
         ]
-        for (index, shortcut) in shortcuts.enumerated() where !shortcut.name.isEmpty {
+        for (index, shortcut) in shortcuts.enumerated() where index != 0 && !shortcut.name.isEmpty {
             lines += [
-                "bookmark_name_\(index)=\(shortcut.name)", "bookmark_ip_\(index)=\(shortcut.address)",
-                "bookmark_pass_\(index)=\(shortcut.password)", "bookmark_rcon_\(index)=\(shortcut.rcon)",
+                line("bookmark_name_\(index)", shortcut.name), line("bookmark_ip_\(index)", shortcut.address),
+                line("bookmark_pass_\(index)", shortcut.password), line("bookmark_rcon_\(index)", shortcut.rcon),
             ]
         }
         return lines.joined(separator: "\n") + "\n"
+    }
+
+    /// One setting. A value cannot contain a newline, or the next load would
+    /// read the rest of it as further settings.
+    private func line(_ key: String, _ value: String) -> String {
+        "\(key)=\(value.filter { !$0.isNewline })"
+    }
+
+    private func line(_ key: String, _ value: Int) -> String {
+        line(key, String(value))
     }
 }
 
@@ -611,7 +628,7 @@ struct LauncherView: View {
             ForEach(games.indices, id: \.self) { game in
                 let selected = config.game == game
                 Button { config.game = game } label: {
-                    Image(nsImage: gameIcon(games[game].0))
+                    Image(nsImage: Self.icons[games[game].0] ?? NSImage())
                         .resizable()
                         .interpolation(.high)
                         .frame(width: 22, height: 22)
@@ -630,11 +647,10 @@ struct LauncherView: View {
         }
     }
 
-    private func gameIcon(_ name: String) -> NSImage {
-        guard let url = Bundle.main.url(forResource: name, withExtension: "png"),
-              let image = NSImage(contentsOf: url) else { return NSImage() }
-        return image
-    }
+    private static let icons: [String: NSImage] = Dictionary(uniqueKeysWithValues: games.map { game in
+        let image = Bundle.main.url(forResource: game.0, withExtension: "png").flatMap { NSImage(contentsOf: $0) } ?? NSImage()
+        return (game.0, image)
+    })
 
     // MARK: Cards
 
@@ -800,7 +816,7 @@ struct LauncherView: View {
                 if checkingPaks {
                     ProgressView().controlSize(.small)
                 } else {
-                    Image(systemName: (pakCheck?.damaged ?? 0) > 0 ? "xmark" : "checkmark")
+                    Image(systemName: pakFailed ? "xmark" : "checkmark")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(pakColor)
                 }
@@ -812,6 +828,13 @@ struct LauncherView: View {
         .buttonStyle(.plain)
         .disabled(checkingPaks)
         .help(pakHelp)
+    }
+
+    /// True after a check that found missing files, damaged files, or no game.
+    private var pakFailed: Bool {
+        guard checkedPaks else { return false }
+        guard let check = pakCheck else { return true }
+        return check.damaged > 0 || check.missing > 0
     }
 
     private var pakColor: Color {
@@ -1022,7 +1045,7 @@ struct BulletField: NSViewRepresentable {
         field.font = .systemFont(ofSize: NSFont.systemFontSize)
         field.isAutomaticTextCompletionEnabled = false
         field.delegate = context.coordinator
-        field.stringValue = String(repeating: "•", count: text.count)
+        field.stringValue = String(repeating: "•", count: (text as NSString).length)
         context.coordinator.real = text
         return field
     }
@@ -1031,7 +1054,7 @@ struct BulletField: NSViewRepresentable {
         context.coordinator.binding = $text
         guard context.coordinator.real != text else { return }
         context.coordinator.real = text
-        let masked = String(repeating: "•", count: text.count)
+        let masked = String(repeating: "•", count: (text as NSString).length)
         if let editor = field.currentEditor() as? NSTextView {
             editor.string = masked
             editor.setSelectedRange(NSRange(location: masked.count, length: 0))
@@ -1055,13 +1078,16 @@ struct BulletField: NSViewRepresentable {
 
         func control(_ control: NSControl, textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString: String?) -> Bool {
             let insert = replacementString ?? ""
-            let start = real.index(real.startIndex, offsetBy: min(range.location, real.count))
-            let end = real.index(start, offsetBy: min(range.length, real.distance(from: start, to: real.endIndex)))
-            real.replaceSubrange(start..<end, with: insert)
+            let current = real as NSString
+            let start = min(max(range.location, 0), current.length)
+            let length = min(max(range.length, 0), current.length - start)
+            let next = NSMutableString(string: current)
+            next.replaceCharacters(in: NSRange(location: start, length: length), with: insert)
+            real = next as String
             binding.wrappedValue = real
-            let masked = String(repeating: "•", count: real.count)
+            let masked = String(repeating: "•", count: (real as NSString).length)
             textView.string = masked
-            textView.setSelectedRange(NSRange(location: min(range.location + (insert as NSString).length, masked.count), length: 0))
+            textView.setSelectedRange(NSRange(location: min(start + (insert as NSString).length, (masked as NSString).length), length: 0))
             return false
         }
     }
@@ -1075,7 +1101,7 @@ struct CrosshairPreview: View {
 
     var body: some View {
         Canvas { context, size in
-            let height = Double(config.resolution.split(separator: "x").last ?? "") ?? 1080
+            let height = Double(pixelSize(config.resolution).height)
             let scale = height / 1080
             let pixels = { (value: Int) in max(1, (Double(value) * scale).rounded()) }
             let length = pixels(config.crosshairLength)

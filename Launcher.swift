@@ -728,7 +728,12 @@ struct LauncherView: View {
         HStack(spacing: 6) {
             UnitField(value: $config.health, range: 1...1000, step: 25, unit: "HP")
                 .help("Player health")
-            SpeedMenu(speed: $config.runSpeed)
+            Picker("", selection: $config.runSpeed) {
+                ForEach(Config.runSpeeds, id: \.self) { Text("\($0) Runspeed").tag($0) }
+            }
+            .labelsHidden()
+            .fixedSize()
+            .help("250 is Allied Assault. 287 is Spearhead and Breakthrough.")
             Toggle("Infinite ammo", isOn: $config.infiniteAmmo)
                 .help("Clips never empty, so weapons never need reloading.")
             Toggle("SH/BT animations", isOn: $config.painAnims)
@@ -917,37 +922,6 @@ struct UnitField: View {
         .padding(.trailing, 2)
         .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.primary.opacity(0.08)))
         .fixedSize()
-    }
-}
-
-/// The run speed, shown as "270 Runspeed". 250 is Allied Assault and 287
-/// is Spearhead and Breakthrough.
-struct SpeedMenu: View {
-    @Binding var speed: Int
-
-    var body: some View {
-        Menu {
-            Picker("", selection: $speed) {
-                ForEach(Config.runSpeeds, id: \.self) { value in
-                    Text("\(value)").tag(value)
-                }
-            }
-            .pickerStyle(.inline)
-        } label: {
-            HStack(spacing: 4) {
-                Text("\(speed)").monospacedDigit()
-                Text("Runspeed").foregroundStyle(.secondary)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.primary.opacity(0.08)))
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
-        .help("250 is Allied Assault. 287 is Spearhead and Breakthrough.")
     }
 }
 

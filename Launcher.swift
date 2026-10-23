@@ -90,7 +90,7 @@ let oldResolutions = [
 
 let botTeams = ["auto", "allies", "axis"]  // g_bot_team values
 let maxBots = 62  // 64 clients minus the two player slots of a bot match
-let shortcutCount = 3
+let shortcutCount = 4
 
 /// The first shortcut is built in. Loading and saving cannot change it.
 let forte = Shortcut(name: "Forte FFA", address: "151.80.234.90:12203")
@@ -640,15 +640,22 @@ struct LauncherView: View {
             SecureField("", text: $config.rcon).textFieldStyle(.roundedBorder)
         }
         Divider()
-        ForEach(0..<shortcutCount, id: \.self) { index in
-            shortcutRow(index)
+        Grid(horizontalSpacing: 12, verticalSpacing: 2) {
+            GridRow {
+                shortcutRow(0)
+                shortcutRow(1)
+            }
+            GridRow {
+                shortcutRow(2)
+                shortcutRow(3)
+            }
         }
     }
 
     private func shortcutRow(_ index: Int) -> some View {
         let shortcut = config.shortcuts[index]
         let empty = shortcut.name.isEmpty
-        return Row("") {
+        return HStack(spacing: 4) {
             Button { config.applyShortcut(index) } label: {
                 Text(empty ? "Empty" : shortcut.name)
                     .lineLimit(1)
@@ -659,14 +666,6 @@ struct LauncherView: View {
             .buttonStyle(.plain)
             .disabled(empty)
             .help(shortcut.address)
-            Button {
-                config.applyShortcut(index)
-                launch(play: false)
-            } label: {
-                Image(systemName: "play.fill")
-            }
-            .disabled(empty)
-            .help("Connect to \(shortcut.name)")
             if index != 0 {
                 Button("Save") {
                     shortcutName = empty ? config.trimmedAddress : shortcut.name
@@ -680,6 +679,14 @@ struct LauncherView: View {
                 .disabled(empty)
                 .help("Clear this shortcut")
             }
+            Button {
+                config.applyShortcut(index)
+                launch(play: false)
+            } label: {
+                Image(systemName: "play.fill")
+            }
+            .disabled(empty)
+            .help("Connect to \(shortcut.name)")
         }
         .controlSize(.small)
     }
@@ -713,15 +720,7 @@ struct LauncherView: View {
         HStack(spacing: 6) {
             UnitField(value: $config.health, range: 1...1000, step: 25, unit: "HP")
                 .help("Player health")
-            Picker("", selection: $config.runSpeed) {
-                ForEach(Config.runSpeeds, id: \.self) { Text("\($0)").tag($0) }
-            }
-            .labelsHidden()
-            .fixedSize()
-            .help("250 is Allied Assault. 287 is Spearhead and Breakthrough.")
-            Spacer(minLength: 0)
-        }
-        HStack(spacing: 6) {
+            SpeedMenu(speed: $config.runSpeed)
             Toggle("Infinite ammo", isOn: $config.infiniteAmmo)
                 .help("Clips never empty, so weapons never need reloading.")
             Toggle("SH/BT animations", isOn: $config.painAnims)
@@ -731,38 +730,27 @@ struct LauncherView: View {
     }
 
     @ViewBuilder private var crosshairRows: some View {
-        HStack(alignment: .center, spacing: 8) {
+        HStack(spacing: 6) {
             CrosshairPreview(config: config)
-                .frame(width: labelWidth, height: 44)
+                .frame(width: 44, height: 22)
                 .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.black.opacity(0.85)))
-            VStack(spacing: 6) {
-                HStack(spacing: 8) {
-                    LabeledSlider("Length", value: $config.crosshairLength, range: Config.crosshairLengths)
-                    LabeledSlider("Gap", value: $config.crosshairGap, range: Config.crosshairGaps)
-                }
-                HStack(spacing: 8) {
-                    LabeledSlider("Thickness", value: $config.crosshairThickness, range: Config.crosshairThicknesses)
-                    HStack(spacing: 6) {
-                        Text("Color").foregroundStyle(.secondary)
-                        Picker("", selection: $config.crosshairColor) {
-                            ForEach(Config.crosshairColors, id: \.hex) { color in
-                                Text(color.name).tag(color.hex)
-                            }
-                        }
-                        .labelsHidden()
-                        .fixedSize()
-                        Spacer(minLength: 4)
-                        Button("Reset") {
-                            config.crosshairLength = Config.crosshairDefaults.length
-                            config.crosshairGap = Config.crosshairDefaults.gap
-                            config.crosshairThickness = Config.crosshairDefaults.thickness
-                            config.crosshairColor = Config.crosshairDefaults.color
-                        }
-                        .fixedSize()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            UnitField(value: $config.crosshairLength, range: Config.crosshairLengths, step: 1, unit: "Length")
+            UnitField(value: $config.crosshairGap, range: Config.crosshairGaps, step: 1, unit: "Gap")
+            UnitField(value: $config.crosshairThickness, range: Config.crosshairThicknesses, step: 1, unit: "Thick")
+            Picker("", selection: $config.crosshairColor) {
+                ForEach(Config.crosshairColors, id: \.hex) { color in
+                    Text(color.name).tag(color.hex)
                 }
             }
+            .labelsHidden()
+            .fixedSize()
+            Button("Reset") {
+                config.crosshairLength = Config.crosshairDefaults.length
+                config.crosshairGap = Config.crosshairDefaults.gap
+                config.crosshairThickness = Config.crosshairDefaults.thickness
+                config.crosshairColor = Config.crosshairDefaults.color
+            }
+            .fixedSize()
         }
         .help("Crosshair sizes are in pixels at 1080p and scale with the resolution.")
         HStack(spacing: 8) {
@@ -896,25 +884,6 @@ struct Card<Content: View>: View {
     }
 }
 
-/// A right-aligned label followed by its controls, so labels line up in
-/// every card.
-struct Row<Content: View>: View {
-    let label: String
-    let content: Content
-
-    init(_ label: String, @ViewBuilder content: () -> Content) {
-        self.label = label
-        self.content = content()
-    }
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(label).foregroundStyle(.secondary).frame(width: labelWidth, alignment: .trailing)
-            content
-        }
-    }
-}
-
 /// A number box that reads as "3 Bots" or "100 HP".
 struct UnitField: View {
     @Binding var value: Int
@@ -931,7 +900,8 @@ struct UnitField: View {
             )
             .textFieldStyle(.plain)
             .multilineTextAlignment(.trailing)
-            .frame(width: 36)
+            .monospacedDigit()
+            .frame(width: range.upperBound > 99 ? 34 : 20)
             Text(unit).foregroundStyle(.secondary)
             Stepper("", value: $value, in: range, step: step).labelsHidden()
         }
@@ -942,37 +912,34 @@ struct UnitField: View {
     }
 }
 
-/// A slider over whole numbers with its value beside it.
-struct IntSlider: View {
-    @Binding var value: Int
-    let range: ClosedRange<Int>
+/// The run speed, shown as "270 Runspeed". 250 is Allied Assault and 287
+/// is Spearhead and Breakthrough.
+struct SpeedMenu: View {
+    @Binding var speed: Int
 
     var body: some View {
-        Slider(
-            value: Binding(get: { Double(value) }, set: { value = Int($0.rounded()) }),
-            in: Double(range.lowerBound)...Double(range.upperBound)
-        )
-        Text("\(value)").monospacedDigit().frame(width: 30, alignment: .trailing)
-    }
-}
-
-/// An IntSlider with a short label in front, for rows narrower than a Row.
-struct LabeledSlider: View {
-    let label: String
-    @Binding var value: Int
-    let range: ClosedRange<Int>
-
-    init(_ label: String, value: Binding<Int>, range: ClosedRange<Int>) {
-        self.label = label
-        self._value = value
-        self.range = range
-    }
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(label).foregroundStyle(.secondary).frame(width: 64, alignment: .leading)
-            IntSlider(value: $value, range: range)
+        Menu {
+            Picker("", selection: $speed) {
+                ForEach(Config.runSpeeds, id: \.self) { value in
+                    Text("\(value)").tag(value)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            HStack(spacing: 4) {
+                Text("\(speed)").monospacedDigit()
+                Text("Runspeed").foregroundStyle(.secondary)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.primary.opacity(0.08)))
         }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("250 is Allied Assault. 287 is Spearhead and Breakthrough.")
     }
 }
 

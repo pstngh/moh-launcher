@@ -672,9 +672,11 @@ struct LauncherView: View {
             .disabled(empty)
             .help(shortcut.address)
             if index != 0 {
-                Button("Save") {
+                Button {
                     shortcutName = empty ? config.trimmedAddress : shortcut.name
                     namingShortcut = index
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
                 }
                 .disabled(config.trimmedAddress.isEmpty)
                 .help("Save the server and passwords above in this shortcut")

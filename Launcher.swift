@@ -636,7 +636,7 @@ struct LauncherView: View {
                         .frame(maxWidth: .infinity)
                         .background(
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .strokeBorder(selected ? accent : Color.clear, lineWidth: 1.5)
+                                .fill(selected ? accent.opacity(0.25) : Color.clear)
                         )
                         .opacity(selected ? 1 : 0.45)
                         .contentShape(Rectangle())
@@ -721,9 +721,9 @@ struct LauncherView: View {
         .controlSize(.small)
         .padding(.horizontal, 4)
         .padding(.vertical, 1)
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .strokeBorder(loaded ? accent : Color.clear, lineWidth: 1.5)
+                .fill(loaded ? accent.opacity(0.2) : Color.clear)
         )
     }
 

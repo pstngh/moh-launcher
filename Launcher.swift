@@ -140,6 +140,7 @@ struct Config: Equatable {
     var infiniteAmmo = true
     var painAnims = true
     var fullscreen = true
+    var borderless = true
     var resolution = "1920x1080"
     var crosshairLength = Config.crosshairDefaults.length
     var crosshairGap = Config.crosshairDefaults.gap
@@ -247,7 +248,7 @@ struct Config: Equatable {
             args += set("name", name)
         }
         args += set("cl_playintro", 0)
-        args += set("r_fullscreen", fullscreen)
+        args += set("r_fullscreen", fullscreen) + set("r_noborder", fullscreen && borderless)
         args += set("r_mode", -1) + set("r_customwidth", size.width) + set("r_customheight", size.height)
         args += set("cg_crosshair_length", crosshairLength) + set("cg_crosshair_gap", crosshairGap)
         args += set("cg_crosshair_thickness", crosshairThickness) + set("cg_crosshair_color", crosshairColor)
@@ -358,6 +359,7 @@ struct Config: Equatable {
         infiniteAmmo = flag("infinite_ammo", infiniteAmmo)
         painAnims = flag("pain_anims", painAnims)
         fullscreen = flag("fullscreen_enabled", fullscreen)
+        borderless = flag("borderless", borderless)
         let oldResolution = choice("resolution_index", 0...oldResolutions.count - 1, -1)
         resolution = (values["resolution"] ?? (oldResolution < 0 ? nil : oldResolutions[oldResolution]))
             .flatMap { resolutions.contains($0) ? $0 : nil } ?? resolution
@@ -373,7 +375,7 @@ struct Config: Equatable {
             line("bot_game_type", gametype), line("bot_map", map), line("bot_count", bots), line("bot_team", botTeam),
             line("player_health", health), line("run_speed", runSpeed), line("infinite_ammo", infiniteAmmo ? 1 : 0),
             line("pain_anims", painAnims ? 1 : 0),
-            line("fullscreen_enabled", fullscreen ? 1 : 0), line("resolution", resolution),
+            line("fullscreen_enabled", fullscreen ? 1 : 0), line("borderless", borderless ? 1 : 0), line("resolution", resolution),
             line("crosshair_length", crosshairLength), line("crosshair_gap", crosshairGap),
             line("crosshair_thickness", crosshairThickness), line("crosshair_color", crosshairColor),
         ]
@@ -801,7 +803,14 @@ struct LauncherView: View {
             }
             .labelsHidden()
             .fixedSize()
+            .disabled(config.fullscreen && config.borderless)
+            .help(config.fullscreen && config.borderless
+                ? "Resolution has no effect in borderless fullscreen — the game uses the desktop resolution."
+                : "Game resolution")
             Toggle("Fullscreen", isOn: $config.fullscreen)
+            Toggle("Borderless", isOn: $config.borderless)
+                .disabled(!config.fullscreen)
+                .help("Borderless fullscreen always uses the desktop resolution. Turn this off for exclusive fullscreen with a custom resolution.")
             Spacer(minLength: 0)
             verifyButton
         }
